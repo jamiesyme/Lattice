@@ -1,10 +1,9 @@
-#include <cairo/cairo.h>
-#include <pango/pangocairo.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 
+#include "graphics.h"
 #include "hub.h"
 #include "surface.h"
 
@@ -43,19 +42,6 @@ int runHub(Hub* hub)
   // Create the window
   Surface* surface = newSurface(100, 100);
 
-  // TEMP: Get the cairo context
-  cairo_t* cr = getCairoContext(surface);
-
-  // Load font
-  PangoFontDescription* fontInfo = pango_font_description_new();
-  pango_font_description_set_family(fontInfo, "monaco");
-  pango_font_description_set_weight(fontInfo, PANGO_WEIGHT_NORMAL);
-  pango_font_description_set_absolute_size(fontInfo, 32 * PANGO_SCALE);
-
-  PangoLayout* fontLayout = pango_cairo_create_layout(cr);
-  pango_layout_set_font_description(fontLayout, fontInfo);
-  pango_layout_set_text(fontLayout, "Good", -1);
-
   while (1) {
 
     // Save state
@@ -71,24 +57,19 @@ int runHub(Hub* hub)
     // Clear the screen if hiding all
     if (ctrlState.shouldShowAll == 0) {
       printf("hiding\n");
-      cairo_save(cr);
-      cairo_set_source_rgba(cr, 0, 1.0, 0, 0.5);
-      cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-      cairo_paint(cr);
-      cairo_restore(cr);
+
+      setDrawColor(surface, 0, 1.0, 0, 0.5);
+      drawFullRect(surface);
 
       // Draw the screen if showing all
     } else {
       printf("showing\n");
-      cairo_save(cr);
-      cairo_set_source_rgba(cr, 1.0, 0.0, 0.0, 0.5);
-      cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-      cairo_paint(cr);
-      cairo_restore(cr);
 
-      cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
-      cairo_move_to(cr, 10, 10);
-      pango_cairo_show_layout(cr, fontLayout);
+      setDrawColor(surface, 1.0, 0.0, 0.0, 0.5);
+      drawFullRect(surface);
+
+      setDrawColor(surface, 0, 0, 1, 1);
+      drawText(surface, 10, 10, 32, "monaco", "Good");
     }
     flushSurface(surface);
 
@@ -105,8 +86,6 @@ int runHub(Hub* hub)
     }
   }
 
-  g_object_unref(fontLayout);
-  pango_font_description_free(fontInfo);
   return 0;
 }
 
