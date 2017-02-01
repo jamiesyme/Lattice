@@ -2,7 +2,7 @@ CC=gcc
 
 MINFO_CFLAGS=-Wall $(shell pkg-config --cflags pangocairo x11)
 MINFO_LDFLAGS=$(shell pkg-config --libs pangocairo x11) -lpthread
-MINFO_SOURCES=src/minfo.c src/hub.c src/radio-receiver.c src/radio-transmitter.c
+MINFO_SOURCES=src/minfo.c src/hub.c src/radio-receiver.c src/radio-transmitter.c src/surface.c
 
 MINFO_MSG_CFLAGS=-Wall
 MINFO_MSG_LDFLAGS=
