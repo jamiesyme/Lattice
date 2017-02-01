@@ -14,3 +14,5 @@ Surface* newSurface(unsigned int width, unsigned int height);
 void freeSurface(Surface* surface);
 
 cairo_t* getCairoContext(Surface* surface);
+
+void flushSurface(Surface* surface);

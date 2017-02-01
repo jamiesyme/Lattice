@@ -106,7 +106,13 @@ Surface* newSurface(unsigned int width, unsigned int height)
                   5);
 
   XMapWindow(xDisplay, xWindow);
-  XSelectInput(xDisplay, xWindow, ExposureMask | KeyPressMask);
+  XSelectInput(xDisplay, xWindow, ExposureMask);
+
+  // Wait for the very first EXPOSE event so the first stuff we draw isn't just
+  // thrown away.
+  // TODO: Replace this hack.
+  XEvent tempEvent;
+  XNextEvent(xDisplay, &tempEvent);
 
   // Create cairo surface
   cairo_surface_t* cs = cairo_xlib_surface_create(xDisplay,
@@ -140,4 +146,10 @@ void freeSurface(Surface* surface)
 cairo_t* getCairoContext(Surface* surface)
 {
   return surface->cContext;
+}
+
+void flushSurface(Surface* surface)
+{
+  cairo_surface_flush(surface->cSurface);
+  XFlush(surface->xDisplay);
 }

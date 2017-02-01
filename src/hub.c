@@ -70,14 +70,16 @@ int runHub(Hub* hub)
 
     // Clear the screen if hiding all
     if (ctrlState.shouldShowAll == 0) {
+      printf("hiding\n");
       cairo_save(cr);
-      cairo_set_source_rgba(cr, 0, 0, 0, 0);
+      cairo_set_source_rgba(cr, 0, 1.0, 0, 0.5);
       cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
       cairo_paint(cr);
       cairo_restore(cr);
 
       // Draw the screen if showing all
     } else {
+      printf("showing\n");
       cairo_save(cr);
       cairo_set_source_rgba(cr, 1.0, 0.0, 0.0, 0.5);
       cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
@@ -88,6 +90,7 @@ int runHub(Hub* hub)
       cairo_move_to(cr, 10, 10);
       pango_cairo_show_layout(cr, fontLayout);
     }
+    flushSurface(surface);
 
     // Wait for a message if we're hidden. This is purely to save resources
     // instead of busy waiting until we either have to quit or show the modules
