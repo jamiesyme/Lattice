@@ -19,9 +19,23 @@ void drawFullRect(Surface* surface)
   cairo_restore(cr);
 }
 
+void drawRect(Surface* surface,
+              int x,
+              int y,
+              unsigned int width,
+              unsigned int height)
+{
+  cairo_t* cr = getCairoContext(surface);
+  cairo_save(cr);
+  cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+  cairo_rectangle(cr, x, y, width, height);
+  cairo_paint(cr);
+  cairo_restore(cr);
+}
+
 void drawText(Surface* surface,
-              unsigned int x,
-              unsigned int y,
+              int x,
+              int y,
               unsigned int size,
               const char* fontName,
               const char* text)

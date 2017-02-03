@@ -1,3 +1,4 @@
+#include <cairo/cairo.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -5,7 +6,10 @@
 
 #include "graphics.h"
 #include "hub.h"
+#include "module.h"
+#include "module-list.h"
 #include "surface.h"
+#include "time-module.h"
 
 
 typedef struct HubCtrlState {
@@ -17,6 +21,9 @@ typedef struct Hub {
   pthread_mutex_t lock;
   pthread_cond_t cond;
   HubCtrlState ctrlState;
+  ModuleList* modules;
+  unsigned int modulePadding;
+  unsigned int screenPadding;
 } Hub;
 
 
@@ -27,11 +34,20 @@ Hub* newHub()
   pthread_cond_init(&hub->cond, 0);
   hub->ctrlState.shouldShowAll = 0;
   hub->ctrlState.shouldQuit = 0;
+  hub->modules = newModuleList();
+  hub->modulePadding = 25;
+  hub->screenPadding = 50;
+  addModuleToList(hub->modules, newTimeModule());
 	return hub;
 }
 
 void freeHub(Hub* hub)
 {
+  for (size_t i = 0; i < getModuleCountOfList(hub->modules); ++i) {
+    Module* module = getModuleFromList(hub->modules, i);
+    module->freeFunc(module);
+  }
+  freeModuleList(hub->modules);
   pthread_cond_destroy(&hub->cond);
   pthread_mutex_destroy(&hub->lock);
 	free(hub);
@@ -39,8 +55,34 @@ void freeHub(Hub* hub)
 
 int runHub(Hub* hub)
 {
-  // Create the window
-  Surface* surface = newSurface(100, 100);
+  // Create the surface
+  Surface* surface;
+  {
+    // Calculate the width and height
+    unsigned int width = 0, height = 0;
+    for (size_t i = 0; i < getModuleCountOfList(hub->modules); ++i) {
+      Module* module = getModuleFromList(hub->modules, i);
+      if (width == 0 || width < module->width) {
+        width = module->width;
+      }
+      if (height == 0 || height < module->height) {
+        height = module->height;
+      }
+    }
+    if (width == 0 || height == 0) {
+      printf("No modules to display. Terminating.\n");
+      return 1;
+    }
+
+    // Calculate the position
+    // Negative coords are subtracted from the max coord
+    int x, y;
+    x = -(width + hub->screenPadding);
+    y = -(height + hub->screenPadding);
+
+    // Create the surface
+    surface = newSurface(x, y, width, height);
+  }
 
   while (1) {
 
@@ -56,20 +98,25 @@ int runHub(Hub* hub)
 
     // Clear the screen if hiding all
     if (ctrlState.shouldShowAll == 0) {
-      printf("hiding\n");
-
       setDrawColor(surface, 0, 1.0, 0, 0.5);
       drawFullRect(surface);
 
       // Draw the screen if showing all
     } else {
-      printf("showing\n");
-
-      setDrawColor(surface, 1.0, 0.0, 0.0, 0.5);
-      drawFullRect(surface);
-
-      setDrawColor(surface, 0, 0, 1, 1);
-      drawText(surface, 10, 10, 32, "monaco", "Good");
+      cairo_t* cr = getCairoContext(surface);
+      cairo_save(cr);
+      for (size_t i = 0; i < getModuleCountOfList(hub->modules); ++i) {
+        Module* module = getModuleFromList(hub->modules, i);
+        if (module->updateFunc == 0) {
+          continue;
+        }
+        cairo_save(cr);
+        cairo_translate(cr, getSurfaceWidth(surface) - module->width, 0);
+        module->updateFunc(module, surface);
+        cairo_restore(cr);
+        cairo_translate(cr, 0, module->height + hub->modulePadding);
+      }
+      cairo_restore(cr);
     }
     flushSurface(surface);
 
@@ -91,6 +138,7 @@ int runHub(Hub* hub)
 
 void stopHub(Hub* hub)
 {
+  // We must set the "quit" flag in a thread-safe manner
   pthread_mutex_lock(&hub->lock);
   if (hub->ctrlState.shouldQuit == 0) {
     hub->ctrlState.shouldQuit = 1;
@@ -101,6 +149,7 @@ void stopHub(Hub* hub)
 
 void showHubModules(Hub* hub)
 {
+  // We must set the "show_all" flag in a thread-safe manner
   pthread_mutex_lock(&hub->lock);
   if (hub->ctrlState.shouldShowAll == 0) {
     hub->ctrlState.shouldShowAll = 1;
@@ -111,6 +160,7 @@ void showHubModules(Hub* hub)
 
 void hideHubModules(Hub* hub)
 {
+  // We must unset the "show_all" flag in a thread-safe manner
   pthread_mutex_lock(&hub->lock);
   if (hub->ctrlState.shouldShowAll != 0) {
     hub->ctrlState.shouldShowAll = 0;

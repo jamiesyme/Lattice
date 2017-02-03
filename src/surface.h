@@ -9,10 +9,15 @@ typedef struct Surface Surface;
 typedef struct _cairo cairo_t;
 
 
-Surface* newSurface(unsigned int width, unsigned int height);
+// Negative position coords will be subtracted from the max coords
+Surface* newSurface(int x, int y, unsigned int width, unsigned int height);
 
 void freeSurface(Surface* surface);
 
 cairo_t* getCairoContext(Surface* surface);
 
 void flushSurface(Surface* surface);
+
+unsigned int getSurfaceWidth(Surface* surface);
+
+unsigned int getSurfaceHeight(Surface* surface);

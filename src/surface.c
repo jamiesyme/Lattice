@@ -1,6 +1,7 @@
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
 #include <X11/Xutil.h>
+#include <X11/extensions/Xinerama.h>
 #include <cairo/cairo.h>
 #include <cairo/cairo-xlib.h>
 #include <stdio.h>
@@ -14,6 +15,8 @@ typedef struct Surface {
   Window xWindow;
   cairo_surface_t* cSurface;
   cairo_t* cContext;
+  unsigned int width;
+  unsigned int height;
 } Surface;
 
 
@@ -38,7 +41,7 @@ enum {
 };
 
 
-Surface* newSurface(unsigned int width, unsigned int height)
+Surface* newSurface(int x, int y, unsigned int width, unsigned int height)
 {
   int status;
   Display* xDisplay = XOpenDisplay(0);
@@ -48,6 +51,16 @@ Surface* newSurface(unsigned int width, unsigned int height)
   }
   int xScreen = DefaultScreen(xDisplay);
   Window xRoot = RootWindow(xDisplay, xScreen);
+  if (x < 0 || y < 0) {
+    int infoCount;
+    XineramaScreenInfo* info = XineramaQueryScreens(xDisplay, &infoCount);
+    if (x < 0) {
+      x = info[0].width - 1 + x;
+    }
+    if (y < 0) {
+      y = info[0].height - 1 + y;
+    }
+  }
   XVisualInfo xVisualInfo;
   status = XMatchVisualInfo(xDisplay,
                             xScreen,
@@ -69,7 +82,7 @@ Surface* newSurface(unsigned int width, unsigned int height)
   int xAttributeMask = CWBackPixmap | CWBorderPixel | CWColormap | CWEventMask;
   Window xWindow = XCreateWindow(xDisplay,
                                  xRoot,
-                                 0, 0,
+                                 x, y,
                                  width, height,
                                  0,
                                  xVisualInfo.depth,
@@ -130,6 +143,8 @@ Surface* newSurface(unsigned int width, unsigned int height)
   surface->xWindow = xWindow;
   surface->cSurface = cs;
   surface->cContext = cr;
+  surface->width = width;
+  surface->height = height;
   return surface;
 }
 
@@ -152,4 +167,14 @@ void flushSurface(Surface* surface)
 {
   cairo_surface_flush(surface->cSurface);
   XFlush(surface->xDisplay);
+}
+
+unsigned int getSurfaceWidth(Surface* surface)
+{
+  return surface->width;
+}
+
+unsigned int getSurfaceHeight(Surface* surface)
+{
+  return surface->height;
 }

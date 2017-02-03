@@ -4,13 +4,8 @@
 
 typedef struct Surface Surface;
 
+Module* newTimeModule();
 
-typedef struct TimeModule {
-  Module base;
-} TimeModule;
+void freeTimeModule(Module* module);
 
-TimeModule* newTimeModule();
-
-void freeTimeModule(TimeModule* module);
-
-void updateTimeModule(TimeModule* module, Surface* surface);
+void updateTimeModule(Module* module, Surface* surface);
