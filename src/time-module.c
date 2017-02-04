@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <time.h>
 
 #include "graphics.h"
 #include "surface.h"
@@ -25,9 +26,20 @@ void freeTimeModule(Module* module)
 
 void updateTimeModule(Module* module, Surface* surface)
 {
+  // Get the current time
+  time_t t;
+  struct tm* tm;
+  t = time(NULL);
+  tm = localtime(&t);
+
+  char strTime[6];
+  strftime(strTime, sizeof strTime, "%H:%M", tm);
+
+  // Draw the rect
   setDrawColor(surface, 1.0, 1.0, 1.0, 0.8);
   drawRect(surface, 0, 0, module->width, module->height);
 
+  // Draw the time
   setDrawColor(surface, 0, 0, 0, 0.8);
-  drawText(surface, 10, 10, 32, "monaco", "Good");
+  drawText(surface, 10, 10, 32, "monaco", strTime);
 }
