@@ -2,7 +2,6 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 
 #include "graphics.h"
 #include "hub.h"
@@ -10,22 +9,7 @@
 #include "module-list.h"
 #include "surface.h"
 #include "time-module.h"
-
-
-long secondsToNano(time_t seconds)
-{
-  return (long)seconds * 1000000000;
-}
-
-int nanoToMilli(long nanoSeconds)
-{
-  return (int)(nanoSeconds / 1000000);
-}
-
-int timespecToMilli(struct timespec t)
-{
-  return nanoToMilli(secondsToNano(t.tv_sec) + t.tv_nsec);
-}
+#include "time-utils.h"
 
 
 typedef struct HubCtrlState {
@@ -103,8 +87,7 @@ int runHub(Hub* hub)
   while (1) {
 
     // Mark the start time so we can sleep later
-    struct timespec startTime, endTime;
-    clock_gettime(CLOCK_MONOTONIC, &startTime);
+    long startTime = getTimeInMilliseconds();
 
     // Save state
     pthread_mutex_lock(&hub->lock);
@@ -153,15 +136,10 @@ int runHub(Hub* hub)
 
       // If we're not hiding, then we want to cap our framerate at 60 fps
     } else {
-      clock_gettime(CLOCK_MONOTONIC, &endTime);
-      int elapsed = timespecToMilli(endTime) - timespecToMilli(startTime);
-      int maxElapsed = 1000 / 60;
-      if (elapsed < maxElapsed) {
-        struct timespec sleepFor;
-        sleepFor.tv_sec = (maxElapsed - elapsed) / 1000;
-        sleepFor.tv_nsec = (maxElapsed - elapsed) % 1000 * 1000000;
-        nanosleep(&sleepFor, NULL);
-      }
+      long endTime = getTimeInMilliseconds();
+      long elapsed = startTime - endTime;
+      long maxElapsed = 1000 / 60;
+      sleepForMilliseconds(maxElapsed - elapsed);
     }
   }
 
