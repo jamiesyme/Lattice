@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "date-module.h"
 #include "graphics.h"
 #include "hub.h"
 #include "module.h"
@@ -32,11 +33,12 @@ Hub* newHub()
   Hub* hub = malloc(sizeof(Hub));
   pthread_mutex_init(&hub->lock, 0);
   pthread_cond_init(&hub->cond, 0);
-  hub->ctrlState.shouldShowAll = 0;
+  hub->ctrlState.shouldShowAll = 1; //0; Disabled for development
   hub->ctrlState.shouldQuit = 0;
   hub->modules = newModuleList();
   hub->modulePadding = 25;
   hub->screenPadding = 50;
+  addModuleToList(hub->modules, newDateModule());
   addModuleToList(hub->modules, newTimeModule());
 	return hub;
 }
@@ -65,9 +67,7 @@ int runHub(Hub* hub)
       if (width == 0 || width < module->width) {
         width = module->width;
       }
-      if (height == 0 || height < module->height) {
-        height = module->height;
-      }
+      height += module->height + (height == 0 ? 0 : hub->modulePadding);
     }
     if (width == 0 || height == 0) {
       printf("No modules to display. Terminating.\n");
