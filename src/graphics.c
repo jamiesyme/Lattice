@@ -37,7 +37,7 @@ void drawRect(Surface* surface,
   cairo_save(cr);
   cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
   cairo_rectangle(cr, x, y, width, height);
-  cairo_paint(cr);
+  cairo_fill(cr);
   cairo_restore(cr);
 }
 
