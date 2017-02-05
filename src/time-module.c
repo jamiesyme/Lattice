@@ -5,9 +5,11 @@
 #include "surface.h"
 #include "time-module.h"
 
+
 typedef struct TimeModule {
   Module base;
 } TimeModule;
+
 
 Module* newTimeModule()
 {
@@ -41,5 +43,7 @@ void updateTimeModule(Module* module, Surface* surface)
 
   // Draw the time
   setDrawColor(surface, 0, 0, 0, 0.8);
-  drawText(surface, 10, 10, 32, "monaco", strTime);
+  TextSurface* textSurface = renderText(surface, 32, "monaco", strTime);
+  drawText(surface, textSurface, 10, 10, 0);
+  freeTextSurface(textSurface);
 }
