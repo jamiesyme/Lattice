@@ -14,7 +14,7 @@ typedef struct TimeModule {
 Module* newTimeModule()
 {
   TimeModule* module = malloc(sizeof(TimeModule));
-  module->base.width = 150;
+  module->base.width = 250;
   module->base.height = 100;
   module->base.updateFunc = updateTimeModule;
   module->base.freeFunc = freeTimeModule;
@@ -34,8 +34,8 @@ void updateTimeModule(Module* module, Surface* surface)
   t = time(NULL);
   tm = localtime(&t);
 
-  char strTime[6];
-  strftime(strTime, sizeof strTime, "%H:%M", tm);
+  char strTime[16];
+  strftime(strTime, sizeof strTime, "%-I:%M", tm);
 
   // Draw the rect
   setDrawColor(surface, 1.0, 1.0, 1.0, 0.8);
@@ -44,6 +44,6 @@ void updateTimeModule(Module* module, Surface* surface)
   // Draw the time
   setDrawColor(surface, 0, 0, 0, 0.8);
   TextSurface* textSurface = renderText(surface, 32, "monaco", strTime);
-  drawText(surface, textSurface, 10, 10, 0);
+  drawText(surface, textSurface, module->width / 2, module->height / 2, 1);
   freeTextSurface(textSurface);
 }
