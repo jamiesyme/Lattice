@@ -103,11 +103,14 @@ int runHub(Hub* hub)
 
     // Clear the screen if hiding all
     if (ctrlState.shouldShowAll == 0) {
-      setDrawColor(surface, 0, 1.0, 0, 0.5);
+      setDrawColor(surface, 0, 0, 0, 0.5);
       drawFullRect(surface);
 
       // Draw the screen if showing all
     } else {
+      setDrawColor(surface, 0, 0, 0, 0);
+      drawFullRect(surface);
+
       cairo_t* cr = getCairoContext(surface);
       cairo_save(cr);
       for (size_t i = 0; i < getModuleCountOfList(hub->modules); ++i) {
