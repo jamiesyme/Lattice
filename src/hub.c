@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "audio-module.h"
 #include "date-module.h"
 #include "graphics.h"
 #include "hub.h"
@@ -38,6 +39,7 @@ Hub* newHub()
   hub->modules = newModuleList();
   hub->modulePadding = 25;
   hub->screenPadding = 50;
+  addModuleToList(hub->modules, newAudioModule());
   addModuleToList(hub->modules, newDateModule());
   addModuleToList(hub->modules, newTimeModule());
 	return hub;
