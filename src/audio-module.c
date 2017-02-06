@@ -90,8 +90,14 @@ void updateAudioModule(Module* module, Surface* surface)
   sink.muted = strtol(bufMute, NULL, 10);
 
   // Draw the rect
-  setDrawColor(surface, 1.0, 1.0, 1.0, 0.8);
+  int border = 4;
+  setDrawColor(surface, 0, 0, 0, 0.8);
   drawRect(surface, 0, 0, module->width, module->height);
+  setDrawColor(surface, 1.0, 1.0, 1.0, 0.8);
+  drawRect(surface,
+           border, border,
+           module->width - border * 2,
+           module->height - border * 2);
 
   // Draw the sink type
   char* text;
