@@ -7,11 +7,11 @@ Hub* newHub();
 
 void freeHub(Hub* hub);
 
-int runHub(Hub* hub);
 
+int shouldUpdateHub(Hub* hub);
 
-// Functions below are thread-safe
-void stopHub(Hub* hub);
+void updateHub(Hub* hub);
+
 
 void showHubModules(Hub* hub);
 

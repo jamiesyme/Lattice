@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <string.h>
-#include "radio-msg.h"
-#include "radio-transmitter.h"
+#include "radio.h"
 
 int main(int argc, char** argv)
 {

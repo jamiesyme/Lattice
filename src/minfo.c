@@ -1,28 +1,63 @@
-#include <pthread.h>
-#include "hub.h"
-#include "radio-msg.h"
-#include "radio-receiver.h"
-#include "radio-transmitter.h"
+#include <stdio.h>
 
-void* runRadioInThread(void* hub_void)
-{
-  Hub* hub = (Hub*)hub_void;
-  runRadio(hub);
-  pthread_exit(0);
-}
+#include "hub.h"
+#include "radio.h"
+
+
+typedef struct App {
+  Hub* hub;
+  RadioReceiver* radio;
+  int shouldQuit;
+} App;
+
+static void processMsg(App* app, RadioMsg msg);
+
 
 int main()
 {
-  Hub* hub = newHub();
-  pthread_t radioThread;
-  pthread_create(&radioThread, 0, runRadioInThread, (void*)hub);
-  int status = runHub(hub);
-  if (status != 0) {
-    RadioMsg msg;
-    msg.type = RMSG_STOP;
-    sendRadioMsg(msg);
+  App app;
+  RadioMsg msg;
+
+  app.hub = newHub();
+  app.radio = newRadioReceiver();
+  app.shouldQuit = 0;
+
+  while (!app.shouldQuit) {
+    if (shouldUpdateHub(app.hub)) {
+      updateHub(app.hub);
+      if (pollForRadioMsg(app.radio, &msg)) {
+        processMsg(&app, msg);
+      }
+    } else {
+      waitForRadioMsg(app.radio, &msg);
+      processMsg(&app, msg);
+    }
   }
-  // TODO: Get status from pthread
-  pthread_join(radioThread, 0);
-  return status;
+
+  freeRadioReceiver(app.radio);
+  freeHub(app.hub);
+  return 0;
+}
+
+static void processMsg(App* app, RadioMsg msg)
+{
+  switch (msg.type) {
+  case RMSG_SHOW_ALL:
+    printf("showing all\n");
+    showHubModules(app->hub);
+    break;
+
+  case RMSG_HIDE_ALL:
+    printf("hiding all\n");
+    hideHubModules(app->hub);
+    break;
+
+  case RMSG_STOP:
+    printf("stopping\n");
+    app->shouldQuit = 1;
+    break;
+
+  default:
+    printf("unknown msg type - %i - ignoring\n", msg.type);
+  }
 }
