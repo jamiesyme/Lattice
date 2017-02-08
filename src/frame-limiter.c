@@ -63,7 +63,7 @@ void applyFrameLimiter(FrameLimiter* limiter)
 {
   long startTime = limiter->lastTimeMs;
   long endTime = getTimeInMilliseconds();
-  long elapsed = startTime - endTime;
+  long elapsed = endTime - startTime;
   long maxElapsed = 1000 / limiter->targetFps;
   sleepForMilliseconds(maxElapsed - elapsed);
   limiter->lastTimeMs = getTimeInMilliseconds();
