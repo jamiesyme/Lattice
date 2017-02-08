@@ -3,12 +3,17 @@
 typedef enum {
   RMSG_HIDE_ALL,
   RMSG_SHOW_ALL,
-  RMSG_STOP
+  RMSG_SHOW_UPDATE,
+  RMSG_STOP,
 } RadioMsgType;
 
 typedef struct RadioMsg {
   RadioMsgType type;
+  void* data;
+  size_t length;
 } RadioMsg;
+
+void freeRadioMsg(RadioMsg* msg);
 
 
 typedef struct RadioReceiver RadioReceiver;

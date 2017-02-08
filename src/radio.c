@@ -16,10 +16,19 @@ struct RadioReceiver {
   int isBlocking;
 };
 
-static int readBytes(int sockFd, unsigned int min, void* buffer);
+static int writeBytes(int sockFd, void* buffer, size_t count);
+
+static int readBytes(int sockFd, void* buffer, size_t count);
+
+static int readRadioMsg(int sockFd, RadioMsg* msgOut);
 
 static void setBlocking(RadioReceiver* receiver, int blocking);
 
+
+void freeRadioMsg(RadioMsg* msg)
+{
+  free(msg->data);
+}
 
 RadioReceiver* newRadioReceiver()
 {
@@ -49,32 +58,27 @@ void freeRadioReceiver(RadioReceiver* receiver)
 void waitForRadioMsg(RadioReceiver* receiver, RadioMsg* msgOut)
 {
   int sockFd;
-  int status;
   struct sockaddr_in addr;
   socklen_t addrSize;
-  RadioMsg msg;
 
   setBlocking(receiver, 1);
 
   addrSize = sizeof addr;
   while (1) {
     sockFd = accept(receiver->sockFd, (struct sockaddr*)&addr, &addrSize);
-    status = readBytes(sockFd, sizeof msg.type, (void*)&msg.type);
-    close(sockFd);
-    if (status == 0) {
-      *msgOut = msg;
+    if (readRadioMsg(sockFd, msgOut) == 0) {
+      close(sockFd);
       return;
     }
+    close(sockFd);
   }
 }
 
 int pollForRadioMsg(RadioReceiver* receiver, RadioMsg* msgOut)
 {
   int sockFd;
-  int status;
   struct sockaddr_in addr;
   socklen_t addrSize;
-  RadioMsg msg;
 
   addrSize = sizeof addr;
   while (1) {
@@ -88,12 +92,11 @@ int pollForRadioMsg(RadioReceiver* receiver, RadioMsg* msgOut)
       return 0;
     }
     setBlocking(receiver, 1);
-    status = readBytes(sockFd, sizeof msg.type, (void*)&msg.type);
-    close(sockFd);
-    if (status == 0) {
-      *msgOut = msg;
+    if (readRadioMsg(sockFd, msgOut) == 0) {
+      close(sockFd);
       return 1;
     }
+    close(sockFd);
   }
 }
 
@@ -108,16 +111,38 @@ void sendRadioMsg(RadioMsg msg)
 
   sockFd = socket(PF_INET, SOCK_STREAM, 0);
   connect(sockFd, (struct sockaddr*)&addr, sizeof addr);
-  write(sockFd, &msg.type, sizeof msg.type);
+  writeBytes(sockFd, &msg.type, sizeof msg.type);
+  writeBytes(sockFd, &msg.length, sizeof msg.length);
+  writeBytes(sockFd, msg.data, msg.length);
   close(sockFd);
 }
 
-static int readBytes(int sockFd, unsigned int min, void* buffer)
+static int writeBytes(int sockFd, void* buffer, size_t count)
 {
-  int bytesRead = 0;
-  int result;
-  while (bytesRead < min) {
-    result = read(sockFd, buffer + bytesRead, min - bytesRead);
+  size_t bytesWritten = 0;
+  ssize_t result;
+  while (bytesWritten < count) {
+    result = write(sockFd, buffer + bytesWritten, count - bytesWritten);
+    if (result < 1) {
+      if (result == 0) {
+        printf("failed to write to socket - write() returned 0\n");
+        return 1;
+      } else {
+        printf("failed to write to socket - %i\n", errno);
+        return 2;
+      }
+    }
+    bytesWritten += result;
+  }
+  return 0;
+}
+
+static int readBytes(int sockFd, void* buffer, size_t count)
+{
+  size_t bytesRead = 0;
+  ssize_t result;
+  while (bytesRead < count) {
+    result = read(sockFd, buffer + bytesRead, count - bytesRead);
     if (result < 1) {
       if (result == 0) {
         printf("failed to read from socket - socket closed\n");
@@ -128,6 +153,26 @@ static int readBytes(int sockFd, unsigned int min, void* buffer)
       }
     }
     bytesRead += result;
+  }
+  return 0;
+}
+
+static int readRadioMsg(int sockFd, RadioMsg* msgOut)
+{
+  if (readBytes(sockFd, (void*)&msgOut->type, sizeof msgOut->type) != 0) {
+    return 1;
+  }
+  if (readBytes(sockFd, (void*)&msgOut->length, sizeof msgOut->length) != 0) {
+    return 1;
+  }
+  if (msgOut->length != 0) {
+    msgOut->data = malloc(msgOut->length);
+    if (readBytes(sockFd, msgOut->data, msgOut->length) != 0) {
+      free(msgOut->data);
+      return 1;
+    }
+  } else {
+    msgOut->data = NULL;
   }
   return 0;
 }

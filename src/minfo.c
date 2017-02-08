@@ -30,10 +30,12 @@ int main()
       updateHub(app.hub);
       if (pollForRadioMsg(app.radio, &msg)) {
         processMsg(&app, msg);
+        freeRadioMsg(&msg);
       }
     } else {
       waitForRadioMsg(app.radio, &msg);
       processMsg(&app, msg);
+      freeRadioMsg(&msg);
     }
     applyFrameLimiter(app.frameLimiter);
   }
