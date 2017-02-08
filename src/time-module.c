@@ -2,28 +2,19 @@
 #include <time.h>
 
 #include "graphics.h"
+#include "module.h"
 #include "surface.h"
 #include "time-module.h"
 
 
-typedef struct TimeModule {
-  Module base;
-} TimeModule;
+void updateTimeModule(Module* module, Surface* surface);
 
-
-Module* newTimeModule()
+void newTimeModule(Module* module)
 {
-  TimeModule* module = malloc(sizeof(TimeModule));
-  module->base.width = 250;
-  module->base.height = 100;
-  module->base.updateFunc = updateTimeModule;
-  module->base.freeFunc = freeTimeModule;
-  return (Module*)module;
-}
-
-void freeTimeModule(Module* module)
-{
-  free(module);
+  module->width = 250;
+  module->height = 100;
+  module->updateFunc = updateTimeModule;
+  module->freeFunc = NULL;
 }
 
 void updateTimeModule(Module* module, Surface* surface)

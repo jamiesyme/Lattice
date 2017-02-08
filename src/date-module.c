@@ -2,13 +2,10 @@
 #include <time.h>
 
 #include "graphics.h"
+#include "module.h"
 #include "surface.h"
 #include "date-module.h"
 
-
-typedef struct DateModule {
-  Module base;
-} DateModule;
 
 // Compatible with tm.tm_wday
 typedef enum Weekday {
@@ -25,19 +22,14 @@ typedef enum Weekday {
 char* weekdayStrings[] = {"S", "M", "T", "W", "T", "F", "S"};
 
 
-Module* newDateModule()
-{
-  DateModule* module = malloc(sizeof(DateModule));
-  module->base.width = 250;
-  module->base.height = 120;
-  module->base.updateFunc = updateDateModule;
-  module->base.freeFunc = freeDateModule;
-  return (Module*)module;
-}
+void updateDateModule(Module* module, Surface* surface);
 
-void freeDateModule(Module* module)
+void newDateModule(Module* module)
 {
-  free(module);
+  module->width = 250;
+  module->height = 120;
+  module->updateFunc = updateDateModule;
+  module->freeFunc = NULL;
 }
 
 void updateDateModule(Module* module, Surface* surface)

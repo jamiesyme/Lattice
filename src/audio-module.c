@@ -3,15 +3,12 @@
 #include <string.h>
 
 #include "graphics.h"
+#include "module.h"
 #include "surface.h"
 #include "audio-module.h"
 
 #define BUF_SIZE 16
 
-
-typedef struct AudioModule {
-  Module base;
-} AudioModule;
 
 typedef enum SinkType {
   ST_UNKNOWN,
@@ -26,7 +23,7 @@ typedef struct Sink {
 } Sink;
 
 
-int runCommand(const char* command, char* output, int outputSize)
+static int runCommand(const char* command, char* output, int outputSize)
 {
   FILE* fp = popen(command, "r");
   if (fp == NULL) {
@@ -42,20 +39,14 @@ int runCommand(const char* command, char* output, int outputSize)
   return status;
 }
 
+void updateAudioModule(Module* module, Surface* surface);
 
-Module* newAudioModule()
+void newAudioModule(Module* module)
 {
-  AudioModule* module = malloc(sizeof(AudioModule));
-  module->base.width = 250;
-  module->base.height = 100;
-  module->base.updateFunc = updateAudioModule;
-  module->base.freeFunc = freeAudioModule;
-  return (Module*)module;
-}
-
-void freeAudioModule(Module* module)
-{
-  free(module);
+  module->width = 250;
+  module->height = 100;
+  module->updateFunc = updateAudioModule;
+  module->freeFunc = NULL;
 }
 
 void updateAudioModule(Module* module, Surface* surface)

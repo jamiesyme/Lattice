@@ -2,14 +2,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "audio-module.h"
-#include "date-module.h"
 #include "graphics.h"
 #include "hub.h"
 #include "module.h"
-#include "module-list.h"
 #include "surface.h"
+
+#include "audio-module.h"
+#include "date-module.h"
 #include "time-module.h"
+
+#define MAX_MODULES 32
 
 
 typedef struct Hub {
@@ -17,7 +19,8 @@ typedef struct Hub {
   int shouldClear;
   unsigned int modulePadding;
   unsigned int screenPadding;
-  ModuleList* modules;
+  Module modules[MAX_MODULES];
+  size_t moduleCount;
   Surface* surface;
 } Hub;
 
@@ -29,14 +32,14 @@ Hub* newHub()
   hub->isShown = 1; //0; Disabled for development
   hub->modulePadding = 25;
   hub->screenPadding = 50;
-  hub->modules = newModuleList();
-  addModuleToList(hub->modules, newAudioModule());
-  addModuleToList(hub->modules, newDateModule());
-  addModuleToList(hub->modules, newTimeModule());
+  hub->moduleCount = 0;
+  newAudioModule(&hub->modules[hub->moduleCount++]);
+  newDateModule(&hub->modules[hub->moduleCount++]);
+  newTimeModule(&hub->modules[hub->moduleCount++]);
   {
     unsigned int width = 0, height = 0;
-    for (size_t i = 0; i < getModuleCountOfList(hub->modules); ++i) {
-      Module* module = getModuleFromList(hub->modules, i);
+    for (size_t i = 0; i < hub->moduleCount; ++i) {
+      Module* module = &hub->modules[i];
       if (width == 0 || width < module->width) {
         width = module->width;
       }
@@ -55,11 +58,12 @@ Hub* newHub()
 void freeHub(Hub* hub)
 {
   freeSurface(hub->surface);
-  for (size_t i = 0; i < getModuleCountOfList(hub->modules); ++i) {
-    Module* module = getModuleFromList(hub->modules, i);
-    module->freeFunc(module);
+  for (size_t i = 0; i < hub->moduleCount; ++i) {
+    Module* module = &hub->modules[i];
+    if (module->freeFunc != NULL) {
+      module->freeFunc(module);
+    }
   }
-  freeModuleList(hub->modules);
   free(hub);
 }
 
@@ -76,8 +80,8 @@ void updateHub(Hub* hub)
 
     cairo_t* cr = getCairoContext(hub->surface);
     cairo_save(cr);
-    for (size_t i = 0; i < getModuleCountOfList(hub->modules); ++i) {
-      Module* module = getModuleFromList(hub->modules, i);
+    for (size_t i = 0; i < hub->moduleCount; ++i) {
+      Module* module = &hub->modules[i];
       if (module->updateFunc == 0) {
         continue;
       }

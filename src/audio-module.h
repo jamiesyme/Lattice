@@ -1,11 +1,5 @@
 #pragma once
 
-#include "module.h"
+typedef struct Module Module;
 
-typedef struct Surface Surface;
-
-Module* newAudioModule();
-
-void freeAudioModule(Module* module);
-
-void updateAudioModule(Module* module, Surface* surface);
+void newAudioModule(Module* module);

@@ -1,11 +1,5 @@
 #pragma once
 
-#include "module.h"
+typedef struct Module Module;
 
-typedef struct Surface Surface;
-
-Module* newDateModule();
-
-void freeDateModule(Module* module);
-
-void updateDateModule(Module* module, Surface* surface);
+void newDateModule(Module* module);

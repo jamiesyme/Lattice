@@ -11,4 +11,5 @@ struct Module {
   unsigned int height;
   ModuleUpdateFunc updateFunc;
   ModuleFreeFunc freeFunc;
+  void* extraData;
 };
