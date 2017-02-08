@@ -10,7 +10,6 @@
 #include "module-list.h"
 #include "surface.h"
 #include "time-module.h"
-#include "time-utils.h"
 
 
 typedef struct Hub {
@@ -71,8 +70,6 @@ int shouldUpdateHub(Hub* hub)
 
 void updateHub(Hub* hub)
 {
-  long startTime = getTimeInMilliseconds();
-
   if (hub->isShown) {
     setDrawColor(hub->surface, 0, 0, 0, 0);
     drawFullRect(hub->surface);
@@ -98,11 +95,6 @@ void updateHub(Hub* hub)
     hub->shouldClear = 0;
   }
   flushSurface(hub->surface);
-
-  long endTime = getTimeInMilliseconds();
-  long elapsed = startTime - endTime;
-  long maxElapsed = 1000 / 60;
-  sleepForMilliseconds(maxElapsed - elapsed);
 }
 
 void showHubModules(Hub* hub)

@@ -1,10 +1,12 @@
 #include <stdio.h>
 
+#include "frame-limiter.h"
 #include "hub.h"
 #include "radio.h"
 
 
 typedef struct App {
+  FrameLimiter* frameLimiter;
   Hub* hub;
   RadioReceiver* radio;
   int shouldQuit;
@@ -18,6 +20,7 @@ int main()
   App app;
   RadioMsg msg;
 
+  app.frameLimiter = newFrameLimiter(60);
   app.hub = newHub();
   app.radio = newRadioReceiver();
   app.shouldQuit = 0;
@@ -32,10 +35,12 @@ int main()
       waitForRadioMsg(app.radio, &msg);
       processMsg(&app, msg);
     }
+    applyFrameLimiter(app.frameLimiter);
   }
 
   freeRadioReceiver(app.radio);
   freeHub(app.hub);
+  freeFrameLimiter(app.frameLimiter);
   return 0;
 }
 
