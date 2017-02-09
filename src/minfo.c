@@ -51,22 +51,18 @@ static void processMsg(App* app, RadioMsg msg)
 {
   switch (msg.type) {
   case RMSG_HIDE_ALL:
-    printf("hiding all\n");
     hideHubModules(app->hub);
     break;
 
   case RMSG_SHOW_ALL:
-    printf("showing all\n");
     showHubModules(app->hub);
     break;
 
   case RMSG_SHOW_UPDATE:
-    printf("showing update\n");
     showModuleUpdate(app->hub, *(ModuleType*)msg.data);
     break;
 
   case RMSG_STOP:
-    printf("stopping\n");
     app->shouldQuit = 1;
     break;
 
