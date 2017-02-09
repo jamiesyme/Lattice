@@ -10,19 +10,37 @@
 #include "audio-module.h"
 #include "date-module.h"
 #include "time-module.h"
+#include "time-utils.h"
 
 #define MAX_MODULES 32
 
 
+typedef struct FadeModule {
+  Module* module;
+  Milliseconds opaqueTimeLeft;
+  Milliseconds fadeTimeLeft;
+} FadeModule;
+
 typedef struct Hub {
   int isShown;
   int shouldClear;
+
   unsigned int modulePadding;
   unsigned int screenPadding;
   Module modules[MAX_MODULES];
   size_t moduleCount;
+  float opacity;
+
+  FadeModule fadeModules[MAX_MODULES];
+  size_t fadeModuleCount;
+  Milliseconds opaqueDuration;
+  Milliseconds fadeDuration;
+  Milliseconds lastUpdateTime;
+
   Surface* surface;
 } Hub;
+
+static void removeFadeModule(Hub* hub, size_t i);
 
 
 Hub* newHub()
@@ -30,12 +48,20 @@ Hub* newHub()
   Hub* hub = malloc(sizeof(Hub));
   hub->shouldClear = 1;
   hub->isShown = 1; //0; Disabled for development
+
   hub->modulePadding = 25;
   hub->screenPadding = 50;
   hub->moduleCount = 0;
+  hub->opacity = 0.8f;
   newAudioModule(&hub->modules[hub->moduleCount++]);
   newDateModule(&hub->modules[hub->moduleCount++]);
   newTimeModule(&hub->modules[hub->moduleCount++]);
+
+  hub->fadeModuleCount = 0;
+  hub->opaqueDuration = 1000;
+  hub->fadeDuration = 1000;
+  hub->lastUpdateTime = getTimeInMilliseconds();
+
   {
     unsigned int width = 0, height = 0;
     for (size_t i = 0; i < hub->moduleCount; ++i) {
@@ -69,11 +95,14 @@ void freeHub(Hub* hub)
 
 int shouldUpdateHub(Hub* hub)
 {
-  return hub->isShown || hub->shouldClear;
+  return hub->isShown || hub->shouldClear || hub->fadeModuleCount > 0;
 }
 
 void updateHub(Hub* hub)
 {
+  Milliseconds frameDuration = getTimeInMilliseconds() - hub->lastUpdateTime;
+  hub->lastUpdateTime = getTimeInMilliseconds();
+
   if (hub->isShown) {
     setDrawColor(hub->surface, 0, 0, 0, 0);
     drawFullRect(hub->surface);
@@ -87,7 +116,37 @@ void updateHub(Hub* hub)
       }
       cairo_save(cr);
       cairo_translate(cr, getSurfaceWidth(hub->surface) - module->width, 0);
-      module->updateFunc(module, hub->surface);
+      module->updateFunc(module, hub->surface, hub->opacity);
+      cairo_restore(cr);
+      cairo_translate(cr, 0, module->height + hub->modulePadding);
+    }
+    cairo_restore(cr);
+
+  } else if (hub->fadeModuleCount > 0) {
+    setDrawColor(hub->surface, 0, 0, 0, 0);
+    drawFullRect(hub->surface);
+
+    cairo_t* cr = getCairoContext(hub->surface);
+    cairo_save(cr);
+    for (size_t i = 0; i < hub->fadeModuleCount; ++i) {
+      FadeModule* fadeModule = &hub->fadeModules[i];
+      Module* module = hub->fadeModules[i].module;
+      if (module->updateFunc == 0) {
+        continue;
+      }
+      float opacity = hub->opacity;
+      if (fadeModule->opaqueTimeLeft > 0.f) {
+        fadeModule->opaqueTimeLeft -= frameDuration;
+      } else {
+        opacity *= (float)fadeModule->fadeTimeLeft / hub->fadeDuration;
+        fadeModule->fadeTimeLeft -= frameDuration;
+        if (fadeModule->fadeTimeLeft < 0.f) {
+          removeFadeModule(hub, i);
+        }
+      }
+      cairo_save(cr);
+      cairo_translate(cr, getSurfaceWidth(hub->surface) - module->width, 0);
+      module->updateFunc(module, hub->surface, opacity);
       cairo_restore(cr);
       cairo_translate(cr, 0, module->height + hub->modulePadding);
     }
@@ -110,4 +169,45 @@ void hideHubModules(Hub* hub)
 {
   hub->isShown = 0;
   hub->shouldClear = 1;
+}
+
+void showModuleUpdate(Hub* hub, ModuleType mt)
+{
+  // To prevent large time deltas after not updating the hub for awhile, we will
+  // reset the update time if we haven't displayed in awhile. If we didn't do
+  // this the opaqueTimeLeft of fade modules would be wiped out in a single
+  // frame.
+  if (!shouldUpdateHub(hub)) {
+    hub->lastUpdateTime = getTimeInMilliseconds();
+  }
+
+  // Reset the fade module if present
+  for (int i = 0; i < hub->fadeModuleCount; ++i) {
+    if (hub->fadeModules[i].module->type == mt) {
+      hub->fadeModules[i].opaqueTimeLeft = hub->opaqueDuration;
+      hub->fadeModules[i].fadeTimeLeft = hub->fadeDuration;
+      return;
+    }
+  }
+
+  // Add the fade module
+  for (int i = 0; i < hub->moduleCount; ++i) {
+    if (hub->modules[i].type == mt) {
+      FadeModule* fadeModule = &hub->fadeModules[hub->fadeModuleCount];
+      fadeModule->module = &hub->modules[i];
+      fadeModule->opaqueTimeLeft = hub->opaqueDuration;
+      fadeModule->fadeTimeLeft = hub->fadeDuration;
+      hub->fadeModuleCount += 1;
+      return;
+    }
+  }
+}
+
+static void removeFadeModule(Hub* hub, size_t i)
+{
+  if (i >= hub->fadeModuleCount) {
+    return;
+  }
+  hub->fadeModules[i] = hub->fadeModules[hub->fadeModuleCount - 1];
+  hub->fadeModuleCount -= 1;
 }

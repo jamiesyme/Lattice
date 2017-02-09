@@ -22,17 +22,18 @@ typedef enum Weekday {
 char* weekdayStrings[] = {"S", "M", "T", "W", "T", "F", "S"};
 
 
-void updateDateModule(Module* module, Surface* surface);
+void updateDateModule(Module* module, Surface* surface, float opacity);
 
 void newDateModule(Module* module)
 {
+  module->type = MT_DATE;
   module->width = 250;
   module->height = 120;
   module->updateFunc = updateDateModule;
   module->freeFunc = NULL;
 }
 
-void updateDateModule(Module* module, Surface* surface)
+void updateDateModule(Module* module, Surface* surface, float opacity)
 {
   // Get the current time
   time_t t;
@@ -45,16 +46,16 @@ void updateDateModule(Module* module, Surface* surface)
 
   // Draw the rect
   int border = 4;
-  setDrawColor(surface, 0, 0, 0, 0.8);
+  setDrawColor(surface, 0, 0, 0, opacity);
   drawRect(surface, 0, 0, module->width, module->height);
-  setDrawColor(surface, 1.0, 1.0, 1.0, 0.8);
+  setDrawColor(surface, 1.0, 1.0, 1.0, opacity);
   drawRect(surface,
            border, border,
            module->width - border * 2,
            module->height - border * 2);
 
   // Draw the date
-  setDrawColor(surface, 0, 0, 0, 0.8);
+  setDrawColor(surface, 0, 0, 0, opacity);
   TextSurface* textSurface = renderText(surface, 32, "monaco", strTime);
   drawText(surface, textSurface, module->width / 2, module->height / 3, 1);
   freeTextSurface(textSurface);
@@ -66,10 +67,10 @@ void updateDateModule(Module* module, Surface* surface)
     int x = module->width / 2 - daysWidth / 2 + dayDiff * d + dayDiff / 2;
     int y = module->height / 4 * 3 - 5;
     if (d == tm->tm_wday) {
-      setDrawColor(surface, 0, 0, 0, 0.8);
+      setDrawColor(surface, 0, 0, 0, opacity);
       drawRect(surface, x - 7, y + 10, 14, 1);
     } else {
-      setDrawColor(surface, 0.6, 0.6, 0.6, 0.8);
+      setDrawColor(surface, 0.6, 0.6, 0.6, opacity);
     }
     textSurface = renderText(surface, 16, "monaco", weekdayStrings[d]);
     drawText(surface, textSurface, x, y, 1);

@@ -2,6 +2,7 @@
 
 #include "frame-limiter.h"
 #include "hub.h"
+#include "module-type.h"
 #include "radio.h"
 
 
@@ -49,14 +50,19 @@ int main()
 static void processMsg(App* app, RadioMsg msg)
 {
   switch (msg.type) {
+  case RMSG_HIDE_ALL:
+    printf("hiding all\n");
+    hideHubModules(app->hub);
+    break;
+
   case RMSG_SHOW_ALL:
     printf("showing all\n");
     showHubModules(app->hub);
     break;
 
-  case RMSG_HIDE_ALL:
-    printf("hiding all\n");
-    hideHubModules(app->hub);
+  case RMSG_SHOW_UPDATE:
+    printf("showing update\n");
+    showModuleUpdate(app->hub, *(ModuleType*)msg.data);
     break;
 
   case RMSG_STOP:

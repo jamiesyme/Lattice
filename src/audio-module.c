@@ -39,17 +39,18 @@ static int runCommand(const char* command, char* output, int outputSize)
   return status;
 }
 
-void updateAudioModule(Module* module, Surface* surface);
+void updateAudioModule(Module* module, Surface* surface, float opacity);
 
 void newAudioModule(Module* module)
 {
+  module->type = MT_AUDIO;
   module->width = 250;
   module->height = 100;
   module->updateFunc = updateAudioModule;
   module->freeFunc = NULL;
 }
 
-void updateAudioModule(Module* module, Surface* surface)
+void updateAudioModule(Module* module, Surface* surface, float opacity)
 {
   // Get the current sink settings
   int statusSink, statusVolume, statusMute;
@@ -82,9 +83,9 @@ void updateAudioModule(Module* module, Surface* surface)
 
   // Draw the rect
   int border = 4;
-  setDrawColor(surface, 0, 0, 0, 0.8);
+  setDrawColor(surface, 0, 0, 0, opacity);
   drawRect(surface, 0, 0, module->width, module->height);
-  setDrawColor(surface, 1.0, 1.0, 1.0, 0.8);
+  setDrawColor(surface, 1.0, 1.0, 1.0, opacity);
   drawRect(surface,
            border, border,
            module->width - border * 2,
@@ -100,7 +101,7 @@ void updateAudioModule(Module* module, Surface* surface)
     text = "Unknown";
   }
   TextSurface* textSurface = renderText(surface, 32, "monaco", text);
-  setDrawColor(surface, 0, 0, 0, 0.8);
+  setDrawColor(surface, 0, 0, 0, opacity);
   drawText(surface, textSurface, module->width / 2, module->height / 2 - 10, 1);
   freeTextSurface(textSurface);
 
@@ -111,9 +112,9 @@ void updateAudioModule(Module* module, Surface* surface)
   int x = module->width / 2 - fullLength / 2;
   int y = module->height / 3 * 2 + 5;
   if (sink.muted) {
-    setDrawColor(surface, 0.8, 0.2, 0.2, 0.8);
+    setDrawColor(surface, 0.8, 0.2, 0.2, opacity);
   } else {
-    setDrawColor(surface, 0.1, 0.1, 0.1, 0.8);
+    setDrawColor(surface, 0.1, 0.1, 0.1, opacity);
   }
   drawRect(surface, x, y, fullLength, thickness / 2);
   drawRect(surface, x, y, curLength, thickness);

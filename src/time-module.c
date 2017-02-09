@@ -7,17 +7,18 @@
 #include "time-module.h"
 
 
-void updateTimeModule(Module* module, Surface* surface);
+void updateTimeModule(Module* module, Surface* surface, float opacity);
 
 void newTimeModule(Module* module)
 {
+  module->type = MT_TIME;
   module->width = 250;
   module->height = 100;
   module->updateFunc = updateTimeModule;
   module->freeFunc = NULL;
 }
 
-void updateTimeModule(Module* module, Surface* surface)
+void updateTimeModule(Module* module, Surface* surface, float opacity)
 {
   // Get the current time
   time_t t;
@@ -30,16 +31,16 @@ void updateTimeModule(Module* module, Surface* surface)
 
   // Draw the rect
   int border = 4;
-  setDrawColor(surface, 0, 0, 0, 0.8);
+  setDrawColor(surface, 0, 0, 0, opacity);
   drawRect(surface, 0, 0, module->width, module->height);
-  setDrawColor(surface, 1.0, 1.0, 1.0, 0.8);
+  setDrawColor(surface, 1.0, 1.0, 1.0, opacity);
   drawRect(surface,
            border, border,
            module->width - border * 2,
            module->height - border * 2);
 
   // Draw the time
-  setDrawColor(surface, 0, 0, 0, 0.8);
+  setDrawColor(surface, 0, 0, 0, opacity);
   TextSurface* textSurface = renderText(surface, 32, "monaco", strTime);
   drawText(surface, textSurface, module->width / 2, module->height / 2, 1);
   freeTextSurface(textSurface);
