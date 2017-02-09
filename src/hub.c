@@ -179,6 +179,12 @@ void hideHubModules(Hub* hub)
 
 void showModuleUpdate(Hub* hub, ModuleType mt)
 {
+  // If the modules are already being shown there is no reason to update a
+  // particular module.
+  if (hub->isShown) {
+    return;
+  }
+
   // To prevent large time deltas after not updating the hub for awhile, we will
   // reset the update time if we haven't displayed in awhile. If we didn't do
   // this the opaqueTimeLeft of fade modules would be wiped out in a single
