@@ -53,13 +53,13 @@ Hub* newHub()
   hub->screenPadding = 50;
   hub->moduleCount = 0;
   hub->opacity = 0.8f;
-  newAudioModule(&hub->modules[hub->moduleCount++]);
-  newDateModule(&hub->modules[hub->moduleCount++]);
   newTimeModule(&hub->modules[hub->moduleCount++]);
+  newDateModule(&hub->modules[hub->moduleCount++]);
+  newAudioModule(&hub->modules[hub->moduleCount++]);
 
   hub->fadeModuleCount = 0;
   hub->opaqueDuration = 1000;
-  hub->fadeDuration = 1000;
+  hub->fadeDuration = 500;
   hub->lastUpdateTime = getTimeInMilliseconds();
 
   {
@@ -109,16 +109,19 @@ void updateHub(Hub* hub)
 
     cairo_t* cr = getCairoContext(hub->surface);
     cairo_save(cr);
+    cairo_translate(cr, 0, getSurfaceHeight(hub->surface) - 1);
     for (size_t i = 0; i < hub->moduleCount; ++i) {
       Module* module = &hub->modules[i];
       if (module->updateFunc == 0) {
         continue;
       }
       cairo_save(cr);
-      cairo_translate(cr, getSurfaceWidth(hub->surface) - module->width, 0);
+      cairo_translate(cr,
+                      getSurfaceWidth(hub->surface) - module->width,
+                      -module->height);
       module->updateFunc(module, hub->surface, hub->opacity);
       cairo_restore(cr);
-      cairo_translate(cr, 0, module->height + hub->modulePadding);
+      cairo_translate(cr, 0, -(module->height + hub->modulePadding));
     }
     cairo_restore(cr);
 
@@ -128,6 +131,7 @@ void updateHub(Hub* hub)
 
     cairo_t* cr = getCairoContext(hub->surface);
     cairo_save(cr);
+    cairo_translate(cr, 0, getSurfaceHeight(hub->surface) - 1);
     for (size_t i = 0; i < hub->fadeModuleCount; ++i) {
       FadeModule* fadeModule = &hub->fadeModules[i];
       Module* module = hub->fadeModules[i].module;
@@ -145,10 +149,12 @@ void updateHub(Hub* hub)
         }
       }
       cairo_save(cr);
-      cairo_translate(cr, getSurfaceWidth(hub->surface) - module->width, 0);
+      cairo_translate(cr,
+                      getSurfaceWidth(hub->surface) - module->width,
+                      -module->height);
       module->updateFunc(module, hub->surface, opacity);
       cairo_restore(cr);
-      cairo_translate(cr, 0, module->height + hub->modulePadding);
+      cairo_translate(cr, 0, -(module->height + hub->modulePadding));
     }
     cairo_restore(cr);
 
