@@ -47,7 +47,7 @@ Hub* newHub()
 {
   Hub* hub = malloc(sizeof(Hub));
   hub->shouldClear = 1;
-  hub->isShown = 1; //0; Disabled for development
+  hub->isShown = 0;
 
   hub->modulePadding = 25;
   hub->screenPadding = 50;
@@ -159,7 +159,7 @@ void updateHub(Hub* hub)
     cairo_restore(cr);
 
   } else {
-    setDrawColor(hub->surface, 0, 0, 0, 0.5);
+    setDrawColor(hub->surface, 0, 0, 0, 0);
     drawFullRect(hub->surface);
     hub->shouldClear = 0;
   }
