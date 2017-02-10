@@ -7,6 +7,7 @@
 // ModuleType is stored in a separate file because some other files (namely
 // minfo.c and minfo-msg.c) only require the module type information.
 #include "module-type.h"
+#include "time-utils.h"
 
 typedef struct Surface Surface;
 typedef struct Module Module;
@@ -16,13 +17,12 @@ typedef void (*ModuleFreeFunc)(Module*);
 
 // A module can be in one of three states:
 //   MS_OFF:         Nothing is rendered.
-//                   Command: `msg-minfo hide`
-//   MS_ON_CONSTANT: The module is rendered with a constant/full opacity.
-//                   Command: `msg-minfo show`
-//   MS_ON_DYNAMIC:  This is for module updates. The module is (optionally)
-//                   faded in, then rendered at full opacity for some duration,
-//                   and then faded out.
-//                   Command: `msg-minfo show-update ...`
+//                   Related command: `msg-minfo hide`
+//   MS_ON_CONSTANT: Module is rendered with a constant/full opacity.
+//                   Related command: `msg-minfo show`
+//   MS_ON_DYNAMIC:  This is for module updates. The module is faded in, rendered
+//                   at full opacity for some duration, and then faded out.
+//                   Related command: `msg-minfo show-update ...`
 typedef enum ModuleState {
   MS_OFF,
   MS_ON_CONSTANT,
@@ -59,6 +59,8 @@ struct Module {
   // Default: MS_OFF
   ModuleState state;
 
+  // Do not set timeAccum directly: it is controlled by setModuleState() and
+  // updateModuleOpacity().
   // Defaults:
   //   full: 0.8
   //   fadeInDuration: 50
@@ -72,7 +74,7 @@ struct Module {
   // Default: NULL
   ModuleUpdateFunc renderFunc;
 
-  // Called once to free the extraData member.
+  // Called once during teardown to free the extraData member.
   // Default: NULL
   ModuleFreeFunc freeFunc;
 
@@ -85,14 +87,14 @@ struct Module {
 // Sets the default values specified above
 void initModule(Module* module);
 
-// Sets the module state and updates the module opacity time accumulator.
+// Sets the state and updates the opacity time accumulator.
 void setModuleState(Module* module, ModuleState state);
 
-// Adds delta to module opacity time accumulator. Sets state to MS_OFF when
-// module has finished fading out.
+// Adds delta to opacity time accumulator. Sets state to MS_OFF when module has
+// finished fading out.
 // Returns updated opacity.
 float updateModuleOpacity(Module* module, Milliseconds delta);
 
-// Calculates the current module opacity based on the rules outlined at the
+// Calculates the current opacity based on the rules outlined at the
 // ModuleOpacity definition.
 float getModuleOpacity(Module* module);
