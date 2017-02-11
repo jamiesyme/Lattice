@@ -17,12 +17,12 @@ typedef void (*ModuleFreeFunc)(Module*);
 
 // A module can be in one of three states:
 //   MS_OFF:         Nothing is rendered.
-//                   Related command: `msg-minfo hide`
+//                   Related command: `minfo-msg hide`
 //   MS_ON_CONSTANT: Module is rendered with a constant/full opacity.
-//                   Related command: `msg-minfo show`
+//                   Related command: `minfo-msg show`
 //   MS_ON_DYNAMIC:  This is for module updates. The module is faded in, rendered
 //                   at full opacity for some duration, and then faded out.
-//                   Related command: `msg-minfo show-update ...`
+//                   Related command: `minfo-msg show-update ...`
 typedef enum ModuleState {
   MS_OFF,
   MS_ON_CONSTANT,
