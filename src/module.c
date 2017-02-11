@@ -64,9 +64,11 @@ float getModuleOpacity(Module* module)
   switch (module->state) {
   case MS_OFF:
     opacity = 0.0f;
+    break;
 
   case MS_ON_CONSTANT:
     opacity = module->opacityObj.full;
+    break;
 
   case MS_ON_DYNAMIC: {
     float f = module->opacityObj.full;
@@ -84,7 +86,7 @@ float getModuleOpacity(Module* module)
     } else {
       opacity = 0.0f;
     }
-  } // end case
+  } break;
   }
 
   return opacity;
