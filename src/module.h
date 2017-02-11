@@ -1,7 +1,7 @@
 #pragma once
 
-// A Module is a rendered component that's controlled and managed by the Hub.
-// You can think of a Module as a widget in MInfo. We will have a module to
+// A module is a rendered component that's controlled and managed by the hub.
+// You can think of a module as a widget in MInfo. We will have a module to
 // display the time, another module to display the date, etc.
 
 // ModuleType is stored in a separate file because some other files (namely
@@ -84,7 +84,7 @@ struct Module {
 };
 
 
-// Sets the default values specified above
+// Sets the default values specified above.
 void initModule(Module* module);
 
 // Sets the state and updates the opacity time accumulator.

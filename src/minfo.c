@@ -51,11 +51,11 @@ static void processMsg(App* app, RadioMsg msg)
 {
   switch (msg.type) {
   case RMSG_HIDE_ALL:
-    hideHubModules(app->hub);
+    hideHub(app->hub);
     break;
 
   case RMSG_SHOW_ALL:
-    showHubModules(app->hub);
+    showHub(app->hub);
     break;
 
   case RMSG_SHOW_UPDATE:
