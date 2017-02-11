@@ -18,11 +18,6 @@ int main(int argc, char** argv)
     return 0;
   }
 
-  if (strcmp(argv[1], "toggle") == 0) {
-    printf("TODO: toggle\n");
-    return 0;
-  }
-
   if (strcmp(argv[1], "hide") == 0) {
     msg.type = RMSG_HIDE_ALL;
     sendRadioMsg(msg);
@@ -54,6 +49,12 @@ int main(int argc, char** argv)
 
   if (strcmp(argv[1], "stop") == 0) {
     msg.type = RMSG_STOP;
+    sendRadioMsg(msg);
+    return 0;
+  }
+
+  if (strcmp(argv[1], "toggle") == 0) {
+    msg.type = RMSG_TOGGLE_ALL;
     sendRadioMsg(msg);
     return 0;
   }

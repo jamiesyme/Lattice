@@ -66,6 +66,10 @@ static void processMsg(App* app, RadioMsg msg)
     app->shouldQuit = 1;
     break;
 
+  case RMSG_TOGGLE_ALL:
+    toggleHub(app->hub);
+    break;
+
   default:
     printf("unknown msg type - %i - ignoring\n", msg.type);
   }

@@ -5,6 +5,7 @@ typedef enum {
   RMSG_SHOW_ALL,
   RMSG_SHOW_UPDATE,
   RMSG_STOP,
+  RMSG_TOGGLE_ALL
 } RadioMsgType;
 
 typedef struct RadioMsg {
