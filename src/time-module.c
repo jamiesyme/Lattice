@@ -1,4 +1,3 @@
-#include <stdlib.h>
 #include <time.h>
 
 #include "graphics.h"
@@ -7,18 +6,17 @@
 #include "time-module.h"
 
 
-void updateTimeModule(Module* module, Surface* surface, float opacity);
+void renderTimeModule(Module* module, Surface* surface);
 
-void newTimeModule(Module* module)
+void initTimeModule(Module* module)
 {
   module->type = MT_TIME;
   module->width = 250;
   module->height = 100;
-  module->updateFunc = updateTimeModule;
-  module->freeFunc = NULL;
+  module->renderFunc = renderTimeModule;
 }
 
-void updateTimeModule(Module* module, Surface* surface, float opacity)
+void renderTimeModule(Module* module, Surface* surface)
 {
   // Get the current time
   time_t t;
@@ -30,6 +28,7 @@ void updateTimeModule(Module* module, Surface* surface, float opacity)
   strftime(strTime, sizeof strTime, "%-I:%M", tm);
 
   // Draw the rect
+  float opacity = getModuleOpacity(module);
   int border = 4;
   setDrawColor(surface, 0, 0, 0, opacity);
   drawRect(surface, 0, 0, module->width, module->height);

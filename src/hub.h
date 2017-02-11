@@ -9,9 +9,9 @@ Hub* newHub();
 void freeHub(Hub* hub);
 
 
-int shouldUpdateHub(Hub* hub);
+int shouldRenderHub(Hub* hub);
 
-void updateHub(Hub* hub);
+void renderHub(Hub* hub);
 
 
 void showHubModules(Hub* hub);

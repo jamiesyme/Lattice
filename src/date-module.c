@@ -1,4 +1,3 @@
-#include <stdlib.h>
 #include <time.h>
 
 #include "graphics.h"
@@ -22,18 +21,17 @@ typedef enum Weekday {
 char* weekdayStrings[] = {"S", "M", "T", "W", "T", "F", "S"};
 
 
-void updateDateModule(Module* module, Surface* surface, float opacity);
+void renderDateModule(Module* module, Surface* surface);
 
-void newDateModule(Module* module)
+void initDateModule(Module* module)
 {
   module->type = MT_DATE;
   module->width = 250;
   module->height = 120;
-  module->updateFunc = updateDateModule;
-  module->freeFunc = NULL;
+  module->renderFunc = renderDateModule;
 }
 
-void updateDateModule(Module* module, Surface* surface, float opacity)
+void renderDateModule(Module* module, Surface* surface)
 {
   // Get the current time
   time_t t;
@@ -45,6 +43,7 @@ void updateDateModule(Module* module, Surface* surface, float opacity)
   strftime(strTime, sizeof strTime, "%b %-d", tm);
 
   // Draw the rect
+  float opacity = getModuleOpacity(module);
   int border = 4;
   setDrawColor(surface, 0, 0, 0, opacity);
   drawRect(surface, 0, 0, module->width, module->height);

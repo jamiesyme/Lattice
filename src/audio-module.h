@@ -2,4 +2,4 @@
 
 typedef struct Module Module;
 
-void newAudioModule(Module* module);
+void initAudioModule(Module* module);

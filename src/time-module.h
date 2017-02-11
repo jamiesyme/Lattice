@@ -2,4 +2,4 @@
 
 typedef struct Module Module;
 
-void newTimeModule(Module* module);
+void initTimeModule(Module* module);

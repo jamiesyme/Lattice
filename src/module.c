@@ -1,3 +1,5 @@
+#include <stddef.h>
+
 #include "module.h"
 
 
@@ -57,14 +59,16 @@ float updateModuleOpacity(Module* module, Milliseconds delta)
 
 float getModuleOpacity(Module* module)
 {
+  float opacity;
+
   switch (module->state) {
   case MS_OFF:
-    return 0.0f;
+    opacity = 0.0f;
 
   case MS_ON_CONSTANT:
-    return module->opacityObj.full;
+    opacity = module->opacityObj.full;
 
-  case MS_ON_DYNAMIC:
+  case MS_ON_DYNAMIC: {
     float f = module->opacityObj.full;
     Milliseconds t, t1, t2, t3;
     t = module->opacityObj.timeAccum;
@@ -72,13 +76,16 @@ float getModuleOpacity(Module* module)
     t2 = t1 + module->opacityObj.holdDuration;
     t3 = t2 + module->opacityObj.fadeOutDuration;
     if (t < t1) {
-      return (float)t / t1 * f;
+      opacity = (float)t / t1 * f;
     } else if (t < t2) {
-      return f;
+      opacity = f;
     } else if (t < t3) {
-      return f - (float)(t - t2) / (t3 - t2) * f;
+      opacity = f - (float)(t - t2) / (t3 - t2) * f;
     } else {
-      return 0.0f;
+      opacity = 0.0f;
     }
+  } // end case
   }
+
+  return opacity;
 }

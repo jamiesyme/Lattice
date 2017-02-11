@@ -72,7 +72,7 @@ struct Module {
   // Called once per frame to render the module if state is not MS_OFF.
   // Function should respect opacityObj.
   // Default: NULL
-  ModuleUpdateFunc renderFunc;
+  ModuleRenderFunc renderFunc;
 
   // Called once during teardown to free the extraData member.
   // Default: NULL

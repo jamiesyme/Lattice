@@ -27,8 +27,8 @@ int main()
   app.shouldQuit = 0;
 
   while (!app.shouldQuit) {
-    if (shouldUpdateHub(app.hub)) {
-      updateHub(app.hub);
+    if (shouldRenderHub(app.hub)) {
+      renderHub(app.hub);
       if (pollForRadioMsg(app.radio, &msg)) {
         processMsg(&app, msg);
         freeRadioMsg(&msg);

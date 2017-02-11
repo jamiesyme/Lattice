@@ -39,18 +39,17 @@ static int runCommand(const char* command, char* output, int outputSize)
   return status;
 }
 
-void updateAudioModule(Module* module, Surface* surface, float opacity);
+void renderAudioModule(Module* module, Surface* surface);
 
-void newAudioModule(Module* module)
+void initAudioModule(Module* module)
 {
   module->type = MT_AUDIO;
   module->width = 250;
   module->height = 100;
-  module->updateFunc = updateAudioModule;
-  module->freeFunc = NULL;
+  module->renderFunc = renderAudioModule;
 }
 
-void updateAudioModule(Module* module, Surface* surface, float opacity)
+void renderAudioModule(Module* module, Surface* surface)
 {
   // Get the current sink settings
   int statusSink, statusVolume, statusMute;
@@ -82,6 +81,7 @@ void updateAudioModule(Module* module, Surface* surface, float opacity)
   sink.muted = strtol(bufMute, NULL, 10);
 
   // Draw the rect
+  float opacity = getModuleOpacity(module);
   int border = 4;
   setDrawColor(surface, 0, 0, 0, opacity);
   drawRect(surface, 0, 0, module->width, module->height);
