@@ -10,20 +10,20 @@
 
 #include "radio.h"
 
+#define PORT 6006
 
-struct RadioReceiver {
+
+typedef struct RadioReceiver {
   int sockFd;
   int isBlocking;
-};
+} RadioReceiver;
 
-static int writeBytes(int sockFd, void* buffer, size_t count);
-
-static int readBytes(int sockFd, void* buffer, size_t count);
-
-static int readRadioMsg(int sockFd, RadioMsg* msgOut);
 
 static void setBlocking(RadioReceiver* receiver, int blocking);
 
+static int readRadioMsg(int sockFd, RadioMsg* msgOut);
+static int readBytes(int sockFd, void* buffer, size_t count);
+static int writeBytes(int sockFd, void* buffer, size_t count);
 
 void freeRadioMsg(RadioMsg* msg)
 {
@@ -36,7 +36,7 @@ RadioReceiver* newRadioReceiver()
   struct sockaddr_in addr;
 
   addr.sin_family = AF_INET;
-  addr.sin_port = htons(6006);
+  addr.sin_port = htons(PORT);
   addr.sin_addr.s_addr = inet_addr("127.0.0.1");
 
   sockFd = socket(PF_INET, SOCK_STREAM, 0);
@@ -106,7 +106,7 @@ void sendRadioMsg(RadioMsg msg)
   struct sockaddr_in addr;
 
   addr.sin_family = AF_INET;
-  addr.sin_port = htons(6006);
+  addr.sin_port = htons(PORT);
   addr.sin_addr.s_addr = inet_addr("127.0.0.1");
 
   sockFd = socket(PF_INET, SOCK_STREAM, 0);
@@ -117,22 +117,36 @@ void sendRadioMsg(RadioMsg msg)
   close(sockFd);
 }
 
-static int writeBytes(int sockFd, void* buffer, size_t count)
+static void setBlocking(RadioReceiver* receiver, int blocking)
 {
-  size_t bytesWritten = 0;
-  ssize_t result;
-  while (bytesWritten < count) {
-    result = write(sockFd, buffer + bytesWritten, count - bytesWritten);
-    if (result < 1) {
-      if (result == 0) {
-        printf("failed to write to socket - write() returned 0\n");
-        return 1;
-      } else {
-        printf("failed to write to socket - %i\n", errno);
-        return 2;
-      }
+  if (receiver->isBlocking != blocking) {
+    int flags = fcntl(receiver->sockFd, F_GETFL, 0);
+    if (blocking) {
+      flags = flags & ~O_NONBLOCK;
+    } else {
+      flags = flags | O_NONBLOCK;
     }
-    bytesWritten += result;
+    fcntl(receiver->sockFd, F_SETFL, flags);
+    receiver->isBlocking = blocking;
+  }
+}
+
+static int readRadioMsg(int sockFd, RadioMsg* msgOut)
+{
+  if (readBytes(sockFd, (void*)&msgOut->type, sizeof msgOut->type) != 0) {
+    return 1;
+  }
+  if (readBytes(sockFd, (void*)&msgOut->length, sizeof msgOut->length) != 0) {
+    return 1;
+  }
+  if (msgOut->length != 0) {
+    msgOut->data = malloc(msgOut->length);
+    if (readBytes(sockFd, msgOut->data, msgOut->length) != 0) {
+      free(msgOut->data);
+      return 1;
+    }
+  } else {
+    msgOut->data = NULL;
   }
   return 0;
 }
@@ -157,36 +171,22 @@ static int readBytes(int sockFd, void* buffer, size_t count)
   return 0;
 }
 
-static int readRadioMsg(int sockFd, RadioMsg* msgOut)
+static int writeBytes(int sockFd, void* buffer, size_t count)
 {
-  if (readBytes(sockFd, (void*)&msgOut->type, sizeof msgOut->type) != 0) {
-    return 1;
-  }
-  if (readBytes(sockFd, (void*)&msgOut->length, sizeof msgOut->length) != 0) {
-    return 1;
-  }
-  if (msgOut->length != 0) {
-    msgOut->data = malloc(msgOut->length);
-    if (readBytes(sockFd, msgOut->data, msgOut->length) != 0) {
-      free(msgOut->data);
-      return 1;
+  size_t bytesWritten = 0;
+  ssize_t result;
+  while (bytesWritten < count) {
+    result = write(sockFd, buffer + bytesWritten, count - bytesWritten);
+    if (result < 1) {
+      if (result == 0) {
+        printf("failed to write to socket - write() returned 0\n");
+        return 1;
+      } else {
+        printf("failed to write to socket - %i\n", errno);
+        return 2;
+      }
     }
-  } else {
-    msgOut->data = NULL;
+    bytesWritten += result;
   }
   return 0;
-}
-
-static void setBlocking(RadioReceiver* receiver, int blocking)
-{
-  if (receiver->isBlocking != blocking) {
-    int flags = fcntl(receiver->sockFd, F_GETFL, 0);
-    if (blocking) {
-      flags = flags & ~O_NONBLOCK;
-    } else {
-      flags = flags | O_NONBLOCK;
-    }
-    fcntl(receiver->sockFd, F_SETFL, flags);
-    receiver->isBlocking = blocking;
-  }
 }
