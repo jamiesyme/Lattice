@@ -104,6 +104,23 @@ Surface* newSurface(int x, int y, unsigned int width, unsigned int height)
                   (unsigned char*)&windowTypeDesktop,
                   1);
 
+  // Make the window sticky
+  Atom wmStateAtom = XInternAtom(xDisplay, "_NET_WM_STATE", 0);
+  Atom wmState[4] = {
+    XInternAtom(xDisplay, "_NET_WM_STATE_ADD", 0),
+    XInternAtom(xDisplay, "_NET_WM_STATE_STICKY", 0),
+    (Atom)0,
+    (Atom)0
+  };
+  XChangeProperty(xDisplay,
+                  xWindow,
+                  wmStateAtom,
+                  XA_ATOM,
+                  32,
+                  PropModeReplace,
+                  (unsigned char*)wmState,
+                  4);
+
   // Remove the window decorations
   Atom motifHintsType = XInternAtom(xDisplay, "_MOTIF_WM_HINTS", 0);
   struct MwmHints motifHints;
