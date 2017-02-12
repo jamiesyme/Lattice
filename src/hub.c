@@ -151,12 +151,20 @@ void renderHub(Hub* hub)
   flushSurface(hub->surface);
 }
 
+static void refreshHub(Hub* hub)
+{
+  if (!hub->shouldRender) {
+    hub->shouldRender = 1;
+    hub->lastRenderTime = getTimeInMilliseconds();
+  }
+}
+
 void showHub(Hub* hub)
 {
   for (size_t i = 0; i < hub->moduleCount; ++i) {
     setModuleState(&hub->modules[i], MS_ON_CONSTANT);
   }
-  hub->shouldRender = 1;
+  refreshHub(hub);
 }
 
 void hideHub(Hub* hub)
@@ -164,7 +172,7 @@ void hideHub(Hub* hub)
   for (size_t i = 0; i < hub->moduleCount; ++i) {
     setModuleState(&hub->modules[i], MS_OFF);
   }
-  hub->shouldRender = 1;
+  refreshHub(hub);
 }
 
 void toggleHub(Hub* hub)
@@ -181,6 +189,7 @@ void toggleHub(Hub* hub)
   } else {
     hideHub(hub);
   }
+  refreshHub(hub);
 }
 
 void showModuleUpdate(Hub* hub, ModuleType mt)
@@ -189,6 +198,7 @@ void showModuleUpdate(Hub* hub, ModuleType mt)
     if (hub->modules[i].type == mt) {
       if (hub->modules[i].state != MS_ON_CONSTANT) {
         setModuleState(&hub->modules[i], MS_ON_DYNAMIC);
+        refreshHub(hub);
       }
       return;
     }
