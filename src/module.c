@@ -10,8 +10,8 @@ void initModule(Module* module)
   module->height = 0;
   module->state = MS_OFF;
   module->opacityObj.full = 0.8;
-  module->opacityObj.fadeInDuration = 50;
-  module->opacityObj.holdDuration = 1000;
+  module->opacityObj.fadeInDuration = 100;
+  module->opacityObj.holdDuration = 1500;
   module->opacityObj.fadeOutDuration = 500;
   module->opacityObj.timeAccum = 0;
   module->renderFunc = NULL;
