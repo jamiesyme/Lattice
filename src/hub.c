@@ -122,7 +122,7 @@ static void renderModules(Hub* hub)
   cairo_translate(cr, 0, hub->height - 1);
   for (size_t i = 0; i < hub->moduleCount; ++i) {
     Module* module = &hub->modules[i];
-    if (module->renderFunc == 0) {
+    if (module->renderFunc == 0 || module->state == MS_OFF) {
       continue;
     }
     cairo_save(cr);
