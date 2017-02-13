@@ -2,7 +2,7 @@
 #include <pango/pangocairo.h>
 #include <stdlib.h>
 
-#include "graphics.h"
+#include "draw-utils.h"
 #include "surface.h"
 
 

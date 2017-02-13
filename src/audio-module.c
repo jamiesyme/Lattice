@@ -2,10 +2,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "graphics.h"
+#include "audio-module.h"
+#include "draw-utils.h"
 #include "module.h"
 #include "surface.h"
-#include "audio-module.h"
 
 #define BUF_SIZE 16
 

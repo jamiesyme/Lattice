@@ -1,6 +1,6 @@
 #include <time.h>
 
-#include "graphics.h"
+#include "draw-utils.h"
 #include "module.h"
 #include "surface.h"
 #include "time-module.h"

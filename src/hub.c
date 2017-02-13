@@ -2,15 +2,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "graphics.h"
+#include "draw-utils.h"
 #include "hub.h"
 #include "module.h"
 #include "surface.h"
+#include "time-utils.h"
 
 #include "audio-module.h"
 #include "date-module.h"
 #include "time-module.h"
-#include "time-utils.h"
 
 #define MAX_MODULES 32
 

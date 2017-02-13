@@ -1,9 +1,9 @@
 #include <time.h>
 
-#include "graphics.h"
+#include "date-module.h"
+#include "draw-utils.h"
 #include "module.h"
 #include "surface.h"
-#include "date-module.h"
 
 
 // Compatible with tm.tm_wday
