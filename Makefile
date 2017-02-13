@@ -16,3 +16,6 @@ minfo: $(MINFO_SOURCES)
 
 minfo_msg: $(MINFO_MSG_SOURCES)
 	@$(CC) $(MINFO_MSG_CFLAGS) $(MINFO_MSG_SOURCES) $(MINFO_MSG_LDFLAGS) -o minfo-msg
+
+clean:
+	@rm -f minfo minfo-msg
