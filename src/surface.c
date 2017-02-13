@@ -20,48 +20,92 @@ typedef struct Surface {
 } Surface;
 
 
-struct MwmHints {
-  unsigned long flags;
-  unsigned long functions;
-  unsigned long decorations;
-  long input_mode;
-  unsigned long status;
-};
+// Input coords x and y can be positive or negative. Positive coords are already
+// normalized, and negative coords will be subtracted from the maximum coords.
+// Example: if screen size is 800x600, x = -10, and y = -10, then xOut = 789 and
+// yOut = 589. The extra -1 is because the maximum coords are indexed from 0.
+static void normalizePositionCoords(Display* xDisplay,
+                                    int x,
+                                    int y,
+                                    int* xOut,
+                                    int* yOut)
+{
+  int infoCount;
+  XineramaScreenInfo* info;
+  info = XineramaQueryScreens(xDisplay, &infoCount);
 
-enum {
-  MWM_HINTS_FUNCTIONS = (1L << 0),
-  MWM_HINTS_DECORATIONS =  (1L << 1),
+  if (x < 0) {
+    *xOut = info[0].width - 1 + x;
+  } else {
+    *xOut = x;
+  }
 
-  MWM_FUNC_ALL = (1L << 0),
-  MWM_FUNC_RESIZE = (1L << 1),
-  MWM_FUNC_MOVE = (1L << 2),
-  MWM_FUNC_MINIMIZE = (1L << 3),
-  MWM_FUNC_MAXIMIZE = (1L << 4),
-  MWM_FUNC_CLOSE = (1L << 5)
-};
+  if (y < 0) {
+    *yOut = info[0].height - 1 + y;
+  } else {
+    *xOut = y;
+  }
+}
 
+// Sets the window type to "NOTIFICATION"
+static void setWindowType(Display* xDisplay, Window xWindow)
+{
+  Atom property = XInternAtom(xDisplay, "_NET_WM_WINDOW_TYPE", 0);
+  Atom value = XInternAtom(xDisplay, "_NET_WM_WINDOW_TYPE_NOTIFICATION", 0);
+  XChangeProperty(xDisplay,
+                  xWindow,
+                  property,
+                  XA_ATOM,
+                  32,
+                  PropModeReplace,
+                  (unsigned char*)&value,
+                  1);
+}
+
+// Sets the window to be sticky and appear across all virtual desktops
+static void setWindowSticky(Display* xDisplay, Window xWindow)
+{
+  Atom property = XInternAtom(xDisplay, "_NET_WM_STATE", 0);
+  Atom value[4] = {
+    XInternAtom(xDisplay, "_NET_WM_STATE_ADD", 0),
+    XInternAtom(xDisplay, "_NET_WM_STATE_STICKY", 0),
+    (Atom)0,
+    (Atom)0
+  };
+  XChangeProperty(xDisplay,
+                  xWindow,
+                  property,
+                  XA_ATOM,
+                  32,
+                  PropModeReplace,
+                  (unsigned char*)value,
+                  4);
+}
 
 Surface* newSurface(int x, int y, unsigned int width, unsigned int height)
 {
   int status;
-  Display* xDisplay = XOpenDisplay(0);
+  Display* xDisplay;
+  int xScreen;
+  Window xRoot, xWindow;
+  XVisualInfo xVisualInfo;
+  XSetWindowAttributes xAttributes;
+  int xAttributeMask;
+
+  // Connect to X
+  xDisplay = XOpenDisplay(0);
   if (xDisplay == 0) {
     printf("Failed to connect to X.\n");
     return 0;
   }
-  int xScreen = DefaultScreen(xDisplay);
-  Window xRoot = RootWindow(xDisplay, xScreen);
-  if (x < 0 || y < 0) {
-    int infoCount;
-    XineramaScreenInfo* info = XineramaQueryScreens(xDisplay, &infoCount);
-    if (x < 0) {
-      x = info[0].width - 1 + x;
-    }
-    if (y < 0) {
-      y = info[0].height - 1 + y;
-    }
-  }
-  XVisualInfo xVisualInfo;
+
+  xScreen = DefaultScreen(xDisplay);
+  xRoot = RootWindow(xDisplay, xScreen);
+
+  // If the caller supplied negative position coords, convert them
+  normalizePositionCoords(xDisplay, x, y, &x, &y);
+
+  // Find a visual info profile for our window that supports transparency
   status = XMatchVisualInfo(xDisplay,
                             xScreen,
                             32,
@@ -71,7 +115,10 @@ Surface* newSurface(int x, int y, unsigned int width, unsigned int height)
     printf("No 32-bit visual available from X.\n");
     return 0;
   }
-  XSetWindowAttributes xAttributes;
+
+  // The window attributes have been developed based on the xlib docs and a lot
+  // of trail and error; I'm not completely sure how all of the values interact
+  // with each other, otherwise I'd document this a bit more.
   xAttributes.background_pixmap = None;
   xAttributes.border_pixel = 0;
   xAttributes.colormap = XCreateColormap(xDisplay,
@@ -79,79 +126,38 @@ Surface* newSurface(int x, int y, unsigned int width, unsigned int height)
                                          xVisualInfo.visual,
                                          AllocNone);
   xAttributes.event_mask = ExposureMask;
-  int xAttributeMask = CWBackPixmap | CWBorderPixel | CWColormap | CWEventMask;
-  Window xWindow = XCreateWindow(xDisplay,
-                                 xRoot,
-                                 x, y,
-                                 width, height,
-                                 0,
-                                 xVisualInfo.depth,
-                                 InputOutput,
-                                 xVisualInfo.visual,
-                                 xAttributeMask,
-                                 &xAttributes);
+  xAttributes.override_redirect = 1;
+  xAttributeMask = (CWBackPixmap |
+                    CWBorderPixel |
+                    CWColormap |
+                    CWEventMask |
+                    CWOverrideRedirect);
 
-  // Make the window floating
-  // I'd prefer "_NET_WM_WINDOW_TYPE_NOTIFICATION", but i3 still tiles that
-  Atom windowType = XInternAtom(xDisplay, "_NET_WM_WINDOW_TYPE", 0);
-  Atom windowTypeDesktop = XInternAtom(xDisplay, "_NET_WM_WINDOW_TYPE_UTILITY", 0);
-  XChangeProperty(xDisplay,
-                  xWindow,
-                  windowType,
-                  XA_ATOM,
-                  32,
-                  PropModeReplace,
-                  (unsigned char*)&windowTypeDesktop,
-                  1);
+  // Create the window
+  xWindow = XCreateWindow(xDisplay,
+                          xRoot,
+                          x, y,
+                          width, height,
+                          0,
+                          xVisualInfo.depth,
+                          InputOutput,
+                          xVisualInfo.visual,
+                          xAttributeMask,
+                          &xAttributes);
 
-  // Make the window sticky
-  Atom wmStateAtom = XInternAtom(xDisplay, "_NET_WM_STATE", 0);
-  Atom wmState[4] = {
-    XInternAtom(xDisplay, "_NET_WM_STATE_ADD", 0),
-    XInternAtom(xDisplay, "_NET_WM_STATE_STICKY", 0),
-    (Atom)0,
-    (Atom)0
-  };
-  XChangeProperty(xDisplay,
-                  xWindow,
-                  wmStateAtom,
-                  XA_ATOM,
-                  32,
-                  PropModeReplace,
-                  (unsigned char*)wmState,
-                  4);
+  // The functionality is the same even without these functions, but it's better
+  // to be explicit about what we want.
+  setWindowType(xDisplay, xWindow);
+  setWindowSticky(xDisplay, xWindow);
 
-  // Remove the window decorations
-  Atom motifHintsType = XInternAtom(xDisplay, "_MOTIF_WM_HINTS", 0);
-  struct MwmHints motifHints;
-  motifHints.flags = MWM_HINTS_DECORATIONS;
-  motifHints.decorations = 0;
-  XChangeProperty(xDisplay,
-                  xWindow,
-                  motifHintsType,
-                  XA_ATOM,
-                  32,
-                  PropModeReplace,
-                  (unsigned char*)&motifHints,
-                  5);
-
+  // Window configuration is done, so map the window to the screen
   XMapWindow(xDisplay, xWindow);
-  XSelectInput(xDisplay, xWindow, ExposureMask);
 
-  // Wait for the very first EXPOSE event so the first stuff we draw isn't just
-  // thrown away.
-  // TODO: Replace this hack.
-  XEvent tempEvent;
-  XNextEvent(xDisplay, &tempEvent);
-
-  // Create cairo surface
+  // Initialize cairo
   cairo_surface_t* cs = cairo_xlib_surface_create(xDisplay,
                                                   xWindow,
                                                   xVisualInfo.visual,
                                                   width, height);
-  cairo_xlib_surface_set_size(cs, width, height); // Is this really needed?
-
-  // Create cairo context
   cairo_t* cr = cairo_create(cs);
 
   // Put together the surface
@@ -175,15 +181,15 @@ void freeSurface(Surface* surface)
   free(surface);
 }
 
-cairo_t* getCairoContext(Surface* surface)
-{
-  return surface->cContext;
-}
-
 void flushSurface(Surface* surface)
 {
   cairo_surface_flush(surface->cSurface);
   XFlush(surface->xDisplay);
+}
+
+cairo_t* getCairoContext(Surface* surface)
+{
+  return surface->cContext;
 }
 
 unsigned int getSurfaceWidth(Surface* surface)
