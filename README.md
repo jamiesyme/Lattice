@@ -6,6 +6,8 @@ Minfo is a lightweight status hub for displaying info such as the current date, 
 
 There is no configuration file yet, so any visual (or functional) changes will require a recompile. Also, the audio module gets its info from a custom script that I use to control my audio, but it should be very straightforward to swap the implementation to use something else.
 
+Minfo makes use of transparency, so you will need a [composite manager](https://wiki.archlinux.org/index.php?title=Xorg&redirect=no#Composite).
+
 ## Compiling
 
 Dependencies:
