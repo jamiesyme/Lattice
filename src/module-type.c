@@ -11,6 +11,8 @@ ModuleType strToModuleType(const char* str)
     return MT_DATE;
   } else if (strcmp(str, "time") == 0) {
     return MT_TIME;
+  } else if (strcmp(str, "workspace") == 0) {
+    return MT_WORKSPACE;
   } else {
     return MT_UNKNOWN;
   }

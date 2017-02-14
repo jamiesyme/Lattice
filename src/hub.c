@@ -11,6 +11,7 @@
 #include "audio-module.h"
 #include "date-module.h"
 #include "time-module.h"
+#include "workspace-module.h"
 
 #define MAX_MODULES 32
 
@@ -76,6 +77,7 @@ Hub* newHub()
   initTimeModule(&hub->modules[hub->moduleCount++]);
   initDateModule(&hub->modules[hub->moduleCount++]);
   initAudioModule(&hub->modules[hub->moduleCount++]);
+  initWorkspaceModule(&hub->modules[hub->moduleCount++]);
 
   updateHubSize(hub);
   hub->surface = newSurface(-(int)(hub->width + hub->screenPadding),

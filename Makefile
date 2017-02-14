@@ -3,7 +3,7 @@ CC=gcc
 MINFO_LIBS=pangocairo x11 xinerama
 MINFO_CFLAGS=-Wall $(shell pkg-config --cflags $(MINFO_LIBS))
 MINFO_LDFLAGS=$(shell pkg-config --libs $(MINFO_LIBS))
-MINFO_SOURCES=src/minfo.c src/audio-module.c src/date-module.c src/frame-limiter.c src/draw-utils.c src/hub.c src/module.c src/module-type.c src/radio.c src/surface.c src/time-module.c src/time-utils.c
+MINFO_SOURCES=src/minfo.c src/audio-module.c src/command-utils.c src/date-module.c src/frame-limiter.c src/draw-utils.c src/hub.c src/module.c src/module-type.c src/radio.c src/surface.c src/time-module.c src/time-utils.c src/workspace-module.c
 
 MINFO_MSG_CFLAGS=-Wall
 MINFO_MSG_LDFLAGS=
