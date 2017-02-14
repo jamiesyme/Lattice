@@ -13,7 +13,7 @@ Dependencies:
 + Xinerama
 + Cairo/Pango
 
-Then a simple `make` should suffice. There is no install target, so you'll need to move `minfo` and `minfo-msg` into your path.
+To compile, `make` should suffice. There is no install target, so you'll need to move `minfo` and `minfo-msg` into your path.
 
 ## Usage
 
@@ -28,6 +28,6 @@ minfo-msg stop
 minfo-msg toggle
 ```
 
-The `toggle` command will toggle between showing and hiding, `stop` will tell minfo to shutdown, and `show-update ...` will show a single module for a couple seconds before fading away.
+The `toggle` command will toggle between showing and hiding, `stop` will tell minfo to shutdown, and `show-update` will show a single module for a couple seconds before fading away.
 
 I recommend using these in your window manager configuration. I have `minfo-msg toggle` bound to `Super + Space`, and `minfo-msg show-update audio` bound to all of my media keys.
