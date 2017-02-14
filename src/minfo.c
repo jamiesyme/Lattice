@@ -7,9 +7,16 @@
 
 
 typedef struct App {
+  // Used to cap the framerate at 60 fps
   FrameLimiter* frameLimiter;
+
+  // Manages and renders all of the modules
   Hub* hub;
+
+  // Listens for messages from minfo-msg
   RadioReceiver* radio;
+
+  // This flag is set after receiving a RMSG_STOP message
   int shouldQuit;
 } App;
 
@@ -26,18 +33,29 @@ int main()
   app.radio = newRadioReceiver();
   app.shouldQuit = 0;
 
+  // We'll keep running until a RMSG_STOP message is received
   while (!app.shouldQuit) {
+
+    // We ask the hub if it needs to do any rendering. If it does, we'll render
+    // it, and then check for any new messages from the radio.
     if (shouldRenderHub(app.hub)) {
       renderHub(app.hub);
+
+      // Check for messages in a non-blocking way
       if (pollForRadioMsg(app.radio, &msg)) {
         processMsg(&app, msg);
         freeRadioMsg(&msg);
       }
     } else {
+      // Since the hub doesn't need to do any rendering (all the modules are
+      // MS_OFF), we can check for messages in a blocking way. This will allow
+      // our application to sleep until the user sends another request.
       waitForRadioMsg(app.radio, &msg);
       processMsg(&app, msg);
       freeRadioMsg(&msg);
     }
+
+    // This will limit our framerate to a maximum of 60 fps
     applyFrameLimiter(app.frameLimiter);
   }
 

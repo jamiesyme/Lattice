@@ -72,9 +72,9 @@ void drawText(Surface* surface,
 {
   cairo_t* cr = getCairoContext(surface);
 
-  // Transform the render position
-  // This involves applying the text's offset
-  // If the text is centered, we'll have to offset by half the size as well
+  // Transform the render position. This involves applying the text's offset. If
+  // the text is centered, we'll also have to offset by half of the text surface
+  // size.
   PangoRectangle inkRect, logicalRect;
   pango_layout_get_extents(textSurface->fontLayout, &inkRect, &logicalRect);
 
