@@ -59,11 +59,8 @@ void renderWorkspaceModule(Module* module, Surface* surface)
   int width = 20;
   int height = 20;
   int columnCount = WORKSPACE_COUNT / 2;
+  int thickness = 3;
   for (size_t i = 0; i < WORKSPACE_COUNT; ++i) {
-    if (workspaces[i].empty) {
-      continue;
-    }
-
     int x, y;
     x = module->width / 2;
     x -= areaWidth / 2;
@@ -79,10 +76,20 @@ void renderWorkspaceModule(Module* module, Surface* surface)
       setDrawColor(surface, 0.8, 0.2, 0.2, opacity);
     } else if (workspaces[i].focused) {
       setDrawColor(surface, 0.1, 0.1, 0.1, opacity);
+    } else if (workspaces[i].empty) {
+      setDrawColor(surface, 0.7, 0.7, 0.7, opacity);
     } else {
-      setDrawColor(surface, 0.6, 0.6, 0.6, opacity);
+      setDrawColor(surface, 0.1, 0.1, 0.1, opacity);
     }
     drawRect(surface, x, y, width, height);
+    if (!workspaces[i].focused) {
+      setDrawColor(surface, 1, 1, 1, opacity);
+      drawRect(surface,
+               x + thickness,
+               y + thickness,
+               width - thickness * 2,
+               height - thickness * 2);
+    }
   }
 }
 
