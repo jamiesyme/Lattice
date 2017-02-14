@@ -1,5 +1,7 @@
 # Minfo
 
+![Screenshot](/../screenshots/screenshot.png?raw=true "Minfo Screenshot")
+
 Minfo is a lightweight status hub for displaying info such as the current date, time, and audio settings. Its goal is to replace i3bar in my current setup so that I can remove the ugly, wasted space at the bottom of my screen without scarificing the convenience.
 
 There is no configuration file yet, so any visual (or functional) changes will require a recompile. Also, the audio module gets its info from a custom script that I use to control my audio, but it should be very straightforward to swap the implementation to use something else.
