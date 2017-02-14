@@ -200,5 +200,6 @@ static int getWorkspaceInfo(Workspace* workspaces)
     workspaces[workspaceIndex] = workspace;
   }
 
+  freeCommandOutput(output);
   return 0;
 }
