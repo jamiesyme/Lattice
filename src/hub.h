@@ -12,6 +12,7 @@ typedef enum ModuleType ModuleType;
 //  + TimeModule
 //  + DateModule
 //  + AudioModule
+//  + WorkspaceModule
 Hub* newHub();
 void freeHub(Hub* hub);
 

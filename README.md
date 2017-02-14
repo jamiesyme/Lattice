@@ -25,7 +25,7 @@ Once running, you can interact with the hub using `minfo-msg`:
 ```bash
 minfo-msg hide
 minfo-msg show
-minfo-msg show-update (audio|date|time)
+minfo-msg show-update (audio|date|time|workspace)
 minfo-msg stop
 minfo-msg toggle
 ```
