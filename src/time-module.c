@@ -27,7 +27,7 @@ void renderTimeModule(Module* module, Surface* surface)
   char strTime[16];
   strftime(strTime, sizeof strTime, "%-I:%M", tm);
 
-  // Draw the rect
+  // Draw the border and background rects
   float opacity = getModuleOpacity(module);
   int border = 4;
   setDrawColor(surface, 0, 0, 0, opacity);

@@ -42,7 +42,7 @@ void renderDateModule(Module* module, Surface* surface)
   char strTime[16];
   strftime(strTime, sizeof strTime, "%b %-d", tm);
 
-  // Draw the rect
+  // Draw the border and background rects
   float opacity = getModuleOpacity(module);
   int border = 4;
   setDrawColor(surface, 0, 0, 0, opacity);
@@ -59,7 +59,7 @@ void renderDateModule(Module* module, Surface* surface)
   drawText(surface, textSurface, module->width / 2, module->height / 3, 1);
   freeTextSurface(textSurface);
 
-  // Draw the days
+  // Draw the days of the week
   int daysWidth = 150;
   int dayDiff = daysWidth / 7;
   for (Weekday d = SUNDAY; d <= SATURDAY; ++d) {

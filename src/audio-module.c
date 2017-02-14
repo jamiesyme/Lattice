@@ -23,6 +23,18 @@ typedef struct Sink {
 } Sink;
 
 
+static SinkType strToSinkType(const char* str)
+{
+  if (strcmp(str, "headphones") == 0) {
+    return ST_HEADPHONES;
+  } else if (strcmp(str, "speakers") == 0) {
+    return ST_SPEAKERS;
+  } else {
+    return ST_UNKNOWN;
+  }
+}
+
+// Runs a command, optionally saves the output, and returns the exit status.
 static int runCommand(const char* command, char* output, int outputSize)
 {
   FILE* fp = popen(command, "r");
@@ -51,7 +63,7 @@ void initAudioModule(Module* module)
 
 void renderAudioModule(Module* module, Surface* surface)
 {
-  // Get the current sink settings
+  // Get the current sink settings from maudio
   int statusSink, statusVolume, statusMute;
   char bufSink[BUF_SIZE], bufVolume[BUF_SIZE], bufMute[BUF_SIZE];
   statusSink   = runCommand("maudio show sink", bufSink, BUF_SIZE);
@@ -68,19 +80,13 @@ void renderAudioModule(Module* module, Surface* surface)
   strcpy(bufVolume, strtok(bufVolume, "\n"));
   strcpy(bufMute, strtok(bufMute, "\n"));
 
-  // Convert the string settings into a sink
+  // Convert string settings to a Sink
   Sink sink;
-  if (strcmp(bufSink, "headphones") == 0) {
-    sink.type = ST_HEADPHONES;
-  } else if (strcmp(bufSink, "speakers") == 0) {
-    sink.type = ST_SPEAKERS;
-  } else {
-    sink.type = ST_UNKNOWN;
-  }
+  sink.type = strToSinkType(bufSink);
   sink.volume = strtol(bufVolume, NULL, 10);
   sink.muted = strtol(bufMute, NULL, 10);
 
-  // Draw the rect
+  // Draw the border and background rects
   float opacity = getModuleOpacity(module);
   int border = 4;
   setDrawColor(surface, 0, 0, 0, opacity);
