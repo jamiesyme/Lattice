@@ -55,41 +55,75 @@ void renderWorkspaceModule(Module* module, Surface* surface)
 
   // Draw the workspaces, split between two rows
   int areaWidth = 160;
-  int areaHeight = 55;
-  int width = 20;
-  int height = 20;
+  int areaHeight = 58;
+  int outerWidth = 24;
+  int outerHeight = 24;
+  int borderSize = 3;
+  int innerWidth = outerWidth - borderSize * 2;
+  int innerHeight = outerHeight - borderSize * 2;
   int columnCount = WORKSPACE_COUNT / 2;
-  int thickness = 3;
   for (size_t i = 0; i < WORKSPACE_COUNT; ++i) {
-    int x, y;
-    x = module->width / 2;
-    x -= areaWidth / 2;
-    x += (areaWidth - width) * (i % columnCount) / (columnCount - 1);
-    y = module->height / 2;
+
+    // Compute the workspace position
+    int outerX, outerY;
+    outerX = module->width / 2;
+    outerX -= areaWidth / 2;
+    outerX += (areaWidth - outerWidth) * (i % columnCount) / (columnCount - 1);
+    outerY = module->height / 2;
     if (i < columnCount) {
-      y -= areaHeight / 2;
+      outerY -= areaHeight / 2;
     } else {
-      y += areaHeight / 2 - height;
+      outerY += areaHeight / 2 - outerHeight;
+    }
+    int innerX, innerY;
+    innerX = outerX + borderSize;
+    innerY = outerY + borderSize;
+
+    // Render the workspace index text
+    char workspaceIndexStr[2];
+    snprintf(workspaceIndexStr, 2, "%i", (int)(i + 1) % 10);
+    TextSurface* ts = renderText(surface, 16, "monaco", workspaceIndexStr);
+    int tsX = innerX + innerWidth / 2;
+    int tsY = innerY + innerHeight / 2;
+
+    // Get the draw color determined by the workspace state
+    float r, g, b;
+    if (workspaces[i].urgent) {
+      r = 0.8;
+      g = 0.2;
+      b = 0.2;
+
+    } else if (workspaces[i].focused) {
+      r = 0.1;
+      g = 0.1;
+      b = 0.1;
+
+    } else if (workspaces[i].empty) {
+      r = 0.7;
+      g = 0.7;
+      b = 0.7;
+
+    } else {
+      r = 0.1;
+      g = 0.1;
+      b = 0.1;
     }
 
-    if (workspaces[i].urgent) {
-      setDrawColor(surface, 0.8, 0.2, 0.2, opacity);
-    } else if (workspaces[i].focused) {
-      setDrawColor(surface, 0.1, 0.1, 0.1, opacity);
-    } else if (workspaces[i].empty) {
-      setDrawColor(surface, 0.7, 0.7, 0.7, opacity);
-    } else {
-      setDrawColor(surface, 0.1, 0.1, 0.1, opacity);
-    }
-    drawRect(surface, x, y, width, height);
-    if (!workspaces[i].focused) {
+    // Draw the workspace
+    setDrawColor(surface, r, g, b, opacity);
+    drawRect(surface, outerX, outerY, outerWidth, outerHeight);
+    if (workspaces[i].focused) {
       setDrawColor(surface, 1, 1, 1, opacity);
-      drawRect(surface,
-               x + thickness,
-               y + thickness,
-               width - thickness * 2,
-               height - thickness * 2);
+      drawText(surface, ts, tsX, tsY, 1);
+    } else {
+      setDrawColor(surface, 1, 1, 1, opacity);
+      drawRect(surface, innerX, innerY, innerWidth, innerHeight);
+      setDrawColor(surface, r, g, b, opacity);
+      drawText(surface, ts, tsX, tsY, 1);
     }
+
+    // Free the workspace index text
+    freeTextSurface(ts);
   }
 }
 
