@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include "audio-module.h"
+#include "command-utils.h"
 #include "draw-utils.h"
 #include "module.h"
 #include "surface.h"
@@ -32,23 +33,6 @@ static SinkType strToSinkType(const char* str)
   } else {
     return ST_UNKNOWN;
   }
-}
-
-// Runs a command, optionally saves the output, and returns the exit status.
-static int runCommand(const char* command, char* output, int outputSize)
-{
-  FILE* fp = popen(command, "r");
-  if (fp == NULL) {
-    printf("Error opening pipe.");
-    return -2;
-  }
-  fgets(output, outputSize, fp);
-  int status = pclose(fp);
-  if (status < 0) {
-    printf("Command not found.");
-    return -1;
-  }
-  return status;
 }
 
 void renderAudioModule(Module* module, Surface* surface);

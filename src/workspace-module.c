@@ -130,7 +130,7 @@ void renderWorkspaceModule(Module* module, Surface* surface)
 static int getWorkspaceInfo(Workspace* workspaces)
 {
   char* output;
-  if (runCommand("i3-msg -t get_workspaces", &output) != 0) {
+  if (runCommandAlloc("i3-msg -t get_workspaces", &output) != 0) {
     return 1;
   }
 
@@ -142,7 +142,7 @@ static int getWorkspaceInfo(Workspace* workspaces)
   //     "visible": true,
   //     "focused": false,
   //     "rect": {
-  //     "x": 2560,
+  //       "x": 2560,
   //       "y": 0,
   //       "width": 1920,
   //       "height": 1052
