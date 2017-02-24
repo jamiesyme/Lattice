@@ -48,6 +48,10 @@ typedef struct Hub {
 } Hub;
 
 
+// Calculates the smallest surface size possible that stills allows us to render
+// all of the active modules ("active" meaning "not MS_OFF"), and
+// resizes/repositions the surface.
+// Should be called once per frame.
 static void updateHubSize(Hub* hub)
 {
   unsigned int newWidth = 0, newHeight = 0;
@@ -94,7 +98,11 @@ Hub* newHub()
   initAudioModule(&hub->modules[hub->moduleCount++]);
   initWorkspaceModule(&hub->modules[hub->moduleCount++]);
 
-  hub->surface = newSurface(0, 0, 1, 1); // 1x1 is minimum window size
+  // The surface will be resizes/repositioned each frame to maintain the optimal
+  // size. The "optimal" size is one that obstructs other windows the least. For
+  // now, we will just create the window as small as possible, which is 1x1.
+  // See renderHub() for more info.
+  hub->surface = newSurface(0, 0, 1, 1);
 
   hub->lastRenderTime = getTimeInMilliseconds();
 
