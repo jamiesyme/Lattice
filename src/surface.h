@@ -20,9 +20,22 @@ typedef struct _cairo cairo_t;
 Surface* newSurface(int x, int y, unsigned int width, unsigned int height);
 void freeSurface(Surface* surface);
 
+
 // This should be called once a frame to flush any queued drawing commands.
 void flushSurface(Surface* surface);
 
-cairo_t* getCairoContext(Surface* surface);
+
+// To prevent the window from stealing input events when fulling transparent,
+// unmap the window.
+void mapSurface(Surface* surface);
+void unmapSurface(Surface* surface);
+
+
+void setSurfacePosition(Surface* surface, int x, int y);
+void setSurfaceSize(Surface* surface, unsigned int width, unsigned int height);
+
 unsigned int getSurfaceWidth(Surface* surface);
 unsigned int getSurfaceHeight(Surface* surface);
+
+
+cairo_t* getCairoContext(Surface* surface);

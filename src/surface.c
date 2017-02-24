@@ -82,6 +82,15 @@ static void setWindowSticky(Display* xDisplay, Window xWindow)
                   4);
 }
 
+// Sets the input flag in WM_HINTS to false
+static void disableWindowInput(Display* xDisplay, Window xWindow)
+{
+  XWMHints xHints;
+  xHints.flags = InputHint;
+  xHints.input = 0;
+  XSetWMHints(xDisplay, xWindow, &xHints);
+}
+
 Surface* newSurface(int x, int y, unsigned int width, unsigned int height)
 {
   int status;
@@ -145,13 +154,10 @@ Surface* newSurface(int x, int y, unsigned int width, unsigned int height)
                           xAttributeMask,
                           &xAttributes);
 
-  // The functionality is the same even without these functions, but it's better
-  // to be explicit about what we want.
+  // Set some extra window properties to get the behaviour we need out of X
   setWindowType(xDisplay, xWindow);
   setWindowSticky(xDisplay, xWindow);
-
-  // Window configuration is done, so map the window to the screen
-  XMapWindow(xDisplay, xWindow);
+  disableWindowInput(xDisplay, xWindow);
 
   // Initialize cairo
   cairo_surface_t* cs = cairo_xlib_surface_create(xDisplay,
@@ -175,7 +181,6 @@ void freeSurface(Surface* surface)
 {
   cairo_destroy(surface->cContext);
   cairo_surface_destroy(surface->cSurface);
-  XUnmapWindow(surface->xDisplay, surface->xWindow);
   XDestroyWindow(surface->xDisplay, surface->xWindow);
   XCloseDisplay(surface->xDisplay);
   free(surface);
@@ -187,9 +192,38 @@ void flushSurface(Surface* surface)
   XFlush(surface->xDisplay);
 }
 
-cairo_t* getCairoContext(Surface* surface)
+void mapSurface(Surface* surface)
 {
-  return surface->cContext;
+  XMapWindow(surface->xDisplay, surface->xWindow);
+  XFlush(surface->xDisplay);
+}
+
+void unmapSurface(Surface* surface)
+{
+  XUnmapWindow(surface->xDisplay, surface->xWindow);
+  XFlush(surface->xDisplay);
+}
+
+void setSurfacePosition(Surface* surface, int x, int y)
+{
+  XWindowChanges changes;
+  changes.x = x;
+  changes.y = y;
+  XConfigureWindow(surface->xDisplay,
+                   surface->xWindow,
+                   CWX | CWY,
+                   &changes);
+}
+
+void setSurfaceSize(Surface* surface, unsigned int width, unsigned int height)
+{
+  XWindowChanges changes;
+  changes.width = width;
+  changes.height = height;
+  XConfigureWindow(surface->xDisplay,
+                   surface->xWindow,
+                   CWWidth | CWHeight,
+                   &changes);
 }
 
 unsigned int getSurfaceWidth(Surface* surface)
@@ -200,4 +234,9 @@ unsigned int getSurfaceWidth(Surface* surface)
 unsigned int getSurfaceHeight(Surface* surface)
 {
   return surface->height;
+}
+
+cairo_t* getCairoContext(Surface* surface)
+{
+  return surface->cContext;
 }

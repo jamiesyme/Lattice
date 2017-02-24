@@ -143,14 +143,30 @@ void renderHub(Hub* hub)
 
   updateRenderFlag(hub, frameDuration);
 
-  setDrawColor(hub->surface, 0, 0, 0, 0);
-  drawFullRect(hub->surface);
-
+  // If we are rendering, we need to:
+  //  1) Update the hub size - we want our surface to be as small as possible,
+  //     so were not stealing more input focus than necessary.
+  //  2) Map the surface - we unmap it when we're not rendering (see note
+  //     below).
+  //  3) Clear the screen
+  //  4) Render the modules
+  //
+  // If we are not rendering, we will unmap the surface. This is to prevent
+  // stealing input events from windows beneath when we are completely hidden.
+  // It would be preferably to disable window events entirely for our surface,
+  // since they're unused, but I don't know how to do that.
   if (hub->shouldRender) {
-    renderModules(hub);
-  }
+    mapSurface(hub->surface);
 
-  flushSurface(hub->surface);
+    setDrawColor(hub->surface, 0, 0, 0, 0);
+    drawFullRect(hub->surface);
+
+    renderModules(hub);
+    flushSurface(hub->surface);
+
+  } else {
+    unmapSurface(hub->surface);
+  }
 }
 
 static void refreshHub(Hub* hub)
