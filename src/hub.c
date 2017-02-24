@@ -50,16 +50,31 @@ typedef struct Hub {
 
 static void updateHubSize(Hub* hub)
 {
-  hub->width = 0;
-  hub->height = 0;
+  unsigned int newWidth = 0, newHeight = 0;
+
   for (size_t i = 0; i < hub->moduleCount; ++i) {
-    if (hub->width == 0 || hub->width < hub->modules[i].width) {
-      hub->width = hub->modules[i].width;
+    if (hub->modules[i].state == MS_OFF) {
+      continue;
     }
-    if (hub->height > 0) {
-      hub->height += hub->modulePadding;
+    if (newWidth == 0 || newWidth < hub->modules[i].width) {
+      newWidth = hub->modules[i].width;
     }
-    hub->height += hub->modules[i].height;
+    if (newHeight > 0) {
+      newHeight += hub->modulePadding;
+    }
+    newHeight += hub->modules[i].height;
+  }
+
+  if (hub->width != newWidth || hub->height != newHeight) {
+    // 1x1 is minimum window size
+    hub->width = newWidth > 0 ? newWidth : 1;
+    hub->height = newHeight > 0 ? newHeight : 1;
+    setSurfaceSize(hub->surface,
+                   hub->width,
+                   hub->height);
+    setSurfacePosition(hub->surface,
+                       -(int)(hub->width + hub->screenPadding),
+                       -(int)(hub->height + hub->screenPadding));
   }
 }
 
@@ -79,11 +94,7 @@ Hub* newHub()
   initAudioModule(&hub->modules[hub->moduleCount++]);
   initWorkspaceModule(&hub->modules[hub->moduleCount++]);
 
-  updateHubSize(hub);
-  hub->surface = newSurface(-(int)(hub->width + hub->screenPadding),
-                            -(int)(hub->height + hub->screenPadding),
-                            hub->width,
-                            hub->height);
+  hub->surface = newSurface(0, 0, 1, 1); // 1x1 is minimum window size
 
   hub->lastRenderTime = getTimeInMilliseconds();
 
@@ -156,6 +167,7 @@ void renderHub(Hub* hub)
   // It would be preferably to disable window events entirely for our surface,
   // since they're unused, but I don't know how to do that.
   if (hub->shouldRender) {
+    updateHubSize(hub);
     mapSurface(hub->surface);
 
     setDrawColor(hub->surface, 0, 0, 0, 0);

@@ -207,8 +207,7 @@ void unmapSurface(Surface* surface)
 void setSurfacePosition(Surface* surface, int x, int y)
 {
   XWindowChanges changes;
-  changes.x = x;
-  changes.y = y;
+  normalizePositionCoords(surface->xDisplay, x, y, &changes.x, &changes.y);
   XConfigureWindow(surface->xDisplay,
                    surface->xWindow,
                    CWX | CWY,
@@ -224,6 +223,8 @@ void setSurfaceSize(Surface* surface, unsigned int width, unsigned int height)
                    surface->xWindow,
                    CWWidth | CWHeight,
                    &changes);
+
+  cairo_xlib_surface_set_size(surface->cSurface, width, height);
 }
 
 unsigned int getSurfaceWidth(Surface* surface)
