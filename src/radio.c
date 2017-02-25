@@ -32,8 +32,10 @@ void freeRadioMsg(RadioMsg* msg)
 
 RadioReceiver* newRadioReceiver()
 {
-  int sockFd;
+  int sockFd, reuse;
   struct sockaddr_in addr;
+
+  reuse = 1;
 
   addr.sin_family = AF_INET;
   addr.sin_port = htons(PORT);
@@ -41,6 +43,8 @@ RadioReceiver* newRadioReceiver()
 
   sockFd = socket(PF_INET, SOCK_STREAM, 0);
   bind(sockFd, (struct sockaddr*)&addr, sizeof addr);
+  setsockopt(sockFd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof reuse);
+  setsockopt(sockFd, SOL_SOCKET, SO_REUSEPORT, &reuse, sizeof reuse);
   listen(sockFd, 20);
 
   RadioReceiver* receiver = malloc(sizeof(RadioReceiver));
