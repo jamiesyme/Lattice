@@ -72,7 +72,7 @@ int runCommandAlloc(const char* command, char** output)
       }
       currentSize += fread(*output + currentSize,
                            sizeof(char),
-                           BUF_SIZE,
+                           (maxOutputSize - currentSize),
                            file);
     }
 
