@@ -48,6 +48,7 @@ int pollForRadioMsg(RadioReceiver* receiver, RadioMsg* msg);
 // radio transmitter object is used to save the connection between calls.
 // Instead, sendRadioMsg() will open a connection, send the message, and then
 // close.
+// Non-zero will be returned upon success.
 // TODO: Consider using a UDP socket instead of TCP. I've never used them
 // before, but this sounds like a solid use case for them.
-void sendRadioMsg(RadioMsg msg);
+int sendRadioMsg(RadioMsg msg);
