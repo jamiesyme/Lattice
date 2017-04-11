@@ -33,6 +33,12 @@ int main()
   app.radio = newRadioReceiver();
   app.shouldQuit = 0;
 
+  // Check for errors
+  if (app.radio == NULL) {
+    printf("Failed to create radio.\n");
+    return 1;
+  }
+
   // We'll keep running until a RMSG_STOP message is received
   while (!app.shouldQuit) {
 
