@@ -4,6 +4,7 @@
 
 #include "command-utils.h"
 #include "draw-utils.h"
+#include "json.h"
 #include "module.h"
 #include "surface.h"
 #include "workspace-module.h"
@@ -161,15 +162,19 @@ static int getWorkspaceInfo(Workspace* workspaces)
     workspaces[i].urgent = 0;
   }
 
-  // HACK: below we manually parse the json output. This should really be
-  // replaced with a real json library.
+  // Prepare for parsing
+  JsonParser jParser;
+  JsonData jData;
+  initJsonParser(&jParser, output, strlen(output));
 
-  // Initialize output index and skip the leading '['
-  size_t oi = 0;
-  oi += 1;
+  // Start with the array
+  parseJson(&jParser, &jData);
+  if (jData.error.type != JET_NONE || jData.type != JT_ARRAY_START) {
+    return 1;
+  }
 
-  // Loop through workspaces until we hit the end of our output, denoted by ']'
-  while (output[oi] != ']') {
+  // Loop through workspaces
+  while (1) {
 
     Workspace workspace;
     size_t workspaceIndex;
@@ -180,61 +185,67 @@ static int getWorkspaceInfo(Workspace* workspaces)
     workspace.urgent = 0;
     workspaceIndex = 0;
 
-    // Skip leading '{'
-    oi += 1;
+    // Open the workspace object (or finish the array)
+    parseJson(&jParser, &jData);
+    if (jData.error.type != JET_NONE) {
+      return 1;
+    }
+    if (jData.type == JT_ARRAY_END) {
+      break;
+    }
+    if (jData.type != JT_OBJECT_START) {
+      return 1;
+    }
 
     // Loop through the workspace members
-    while (output[oi] != '}') {
+    while (1) {
 
-      // Skip leading '"'
-      oi += 1;
+      // Get the field name (or the workspace-closing brace)
+      parseJson(&jParser, &jData);
+      if (jData.error.type != JET_NONE) {
+        return 1;
+      }
+      if (jData.type == JT_OBJECT_END) {
+        break;
+      }
+      if (jData.type != JT_STRING) {
+        return 1;
+      }
+      char* fieldName = jsonDataToString(&jParser, &jData);
 
-      // Read field name
-      char* fieldName = &output[oi];
-      size_t fieldNameSize = strcspn(fieldName, "\"");
-      oi += fieldNameSize + 1;
-
-      // Skip ':'
-      oi += 1;
+      // Get the field value
+      parseJson(&jParser, &jData);
+      if (jData.error.type != JET_NONE) {
+        return 1;
+      }
 
       // If this is a nested object (like "rect"), we need to skip it
-      if (output[oi] == '{') {
-        oi += strcspn(&output[oi], "}") + 1;
-        if (output[oi] == ',') {
-          oi += 1;
+      if (jData.type == JT_OBJECT_START) {
+        while (jData.type != JT_OBJECT_END) {
+          parseJson(&jParser, &jData);
+          if (jData.error.type != JET_NONE) {
+            return 1;
+          }
         }
         continue;
       }
 
-      // Read field value
-      char* fieldValue = &output[oi];
-      size_t fieldValueSize = strcspn(fieldValue, ",}");
-      oi += fieldValueSize;
-      if (output[oi] == ',') {
-        oi += 1;
-      }
-
       // Interpret the field
-      if (strncmp("num", fieldName, fieldNameSize) == 0) {
-        workspaceIndex = strtoul(fieldValue, NULL, 10) - 1;
+      if (strcmp("num", fieldName) == 0) {
+        workspaceIndex = (int)jsonDataToNumber(&jParser, &jData) - 1;
 
-      } else if (strncmp("visible", fieldName, fieldNameSize) == 0) {
-        workspace.visible = strncmp("false", fieldValue, fieldValueSize);
+      } else if (strcmp("visible", fieldName) == 0) {
+        workspace.visible = jParser.str[jData.start] == 't';
 
-      } else if (strncmp("focused", fieldName, fieldNameSize) == 0) {
-        workspace.focused = strncmp("false", fieldValue, fieldValueSize);
+      } else if (strcmp("focused", fieldName) == 0) {
+        workspace.focused = jParser.str[jData.start] == 't';
 
-      } else if (strncmp("urgent", fieldName, fieldNameSize) == 0) {
-        workspace.urgent = strncmp("false", fieldValue, fieldValueSize);
+      } else if (strcmp("urgent", fieldName) == 0) {
+        workspace.urgent = jParser.str[jData.start] == 't';
       }
-    }
 
-    // Skip trailing '}'
-    oi += 1;
-
-    // Skip trailing ','
-    if (output[oi] == ',') {
-      oi += 1;
+      // Don't forget to free the field name
+      free(fieldName);
     }
 
     // Save the workspace data
