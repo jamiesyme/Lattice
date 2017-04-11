@@ -34,6 +34,8 @@ typedef struct {
   char* str;
   int strLen;
   int offset;
+  int lookAheadAvailable;
+  JsonData lookAhead;
 } JsonParser;
 
 
@@ -45,7 +47,13 @@ void initJsonParser(JsonParser* parser, char* str, int strLen);
 // Parse the next piece of data from the json string.
 // When there is no more data left, `data->error.type` will be set to
 // `JET_NO_MORE`.
-void parseJson(JsonParser* parser, JsonData* data);
+// Returns non-zero on success. Otherwise, zero is returned, and the error field
+// within the json data is set.
+int parseJson(JsonParser* parser, JsonData* data);
+
+
+// NOTE: The above two functions are the only functions necessary to parse json.
+// The functions below are simply provided for convenience.
 
 
 // Converts the json data struct to a c-string.
@@ -62,3 +70,13 @@ char* jsonDataToString(JsonParser* parser, JsonData* data);
 // Converts a json data struct of type JT_NUMBER to a double.
 // Other json data struct types will return 0.
 double jsonDataToNumber(JsonParser* parser, JsonData* data);
+
+
+// Parses the next item. If the data type does not match the type specified by
+// the caller, than the item is not consumed, and will be returned on subsequent
+// calls to acceptJson() or parseJson().
+// Regardless of success or failure, the data struct will be filled with the
+// next json info.
+// Returns non-zero on success. Otherwise, zero is returned, and the error field
+// within the json data is set.
+int acceptJson(JsonParser* parser, JsonData* data, JsonType type);

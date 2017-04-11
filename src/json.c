@@ -9,10 +9,18 @@ void initJsonParser(JsonParser* parser, char* str, int strLen)
   parser->str = str;
   parser->strLen = strLen;
   parser->offset = 0;
+  parser->lookAheadAvailable = 0;
 }
 
-void parseJson(JsonParser* parser, JsonData* data)
+int parseJson(JsonParser* parser, JsonData* data)
 {
+  // Consume the look-ahead if it's available
+  if (parser->lookAheadAvailable) {
+    parser->lookAheadAvailable = 0;
+    *data = parser->lookAhead;
+    return data->error.type == JET_NONE;
+  }
+
   // Reset the json data
   data->error.type = JET_NONE;
   data->error.offset = 0;
@@ -28,7 +36,7 @@ void parseJson(JsonParser* parser, JsonData* data)
       data->type = JT_ARRAY_START;
       data->start = parser->offset;
       data->end = parser->offset++;
-      return;
+      return 1;
     }
 
     // Check for array end
@@ -36,7 +44,7 @@ void parseJson(JsonParser* parser, JsonData* data)
       data->type = JT_ARRAY_END;
       data->start = parser->offset;
       data->end = parser->offset++;
-      return;
+      return 1;
     }
 
     // Check for object start
@@ -44,7 +52,7 @@ void parseJson(JsonParser* parser, JsonData* data)
       data->type = JT_OBJECT_START;
       data->start = parser->offset;
       data->end = parser->offset++;
-      return;
+      return 1;
     }
 
     // Check for object end
@@ -52,7 +60,7 @@ void parseJson(JsonParser* parser, JsonData* data)
       data->type = JT_OBJECT_END;
       data->start = parser->offset;
       data->end = parser->offset++;
-      return;
+      return 1;
     }
 
     // Check for true boolean
@@ -62,7 +70,7 @@ void parseJson(JsonParser* parser, JsonData* data)
       data->start = parser->offset;
       data->end = parser->offset + 3;
       parser->offset += 4;
-      return;
+      return 1;
     }
 
     // Check for false boolean
@@ -72,7 +80,7 @@ void parseJson(JsonParser* parser, JsonData* data)
       data->start = parser->offset;
       data->end = parser->offset + 4;
       parser->offset += 5;
-      return;
+      return 1;
     }
 
     // Check for null
@@ -82,7 +90,7 @@ void parseJson(JsonParser* parser, JsonData* data)
       data->start = parser->offset;
       data->end = parser->offset + 3;
       parser->offset += 4;
-      return;
+      return 1;
     }
 
     // Check for number
@@ -122,7 +130,7 @@ void parseJson(JsonParser* parser, JsonData* data)
       }
 
       data->end = parser->offset - 1;
-      return;
+      return 1;
     }
 
     // Check for string
@@ -141,7 +149,7 @@ void parseJson(JsonParser* parser, JsonData* data)
           if (parser->offset + 1 >= parser->strLen) {
             data->error.type = JET_INVALID_STRING;
             data->error.offset = parser->offset;
-            return;
+            return 0;
           }
 
           // Check the control character
@@ -166,14 +174,14 @@ void parseJson(JsonParser* parser, JsonData* data)
                 isxdigit(parser->str[parser->offset + 3]) == 0) {
               data->error.type = JET_INVALID_STRING;
               data->error.offset = parser->offset;
-              return;
+              return 0;
             }
             parser->offset += 4;
             break;
           default:
             data->error.type = JET_INVALID_STRING;
             data->error.offset = parser->offset;
-            return;
+            return 0;
           }
           continue;
         }
@@ -192,11 +200,11 @@ void parseJson(JsonParser* parser, JsonData* data)
       if (parser->str[parser->offset] != '"') {
         data->error.type = JET_INVALID_STRING;
         data->error.offset = data->start - 1;
-        return;
+        return 0;
       }
       data->end = parser->offset - 1;
       parser->offset++;
-      return;
+      return 1;
     }
 
     // Skip whitespace
@@ -222,11 +230,12 @@ void parseJson(JsonParser* parser, JsonData* data)
     // What is this?!
     data->error.type = JET_UNEXPECTED_CHARACTER;
     data->error.offset = parser->offset;
-    return;
+    return 0;
   }
 
   // We found nothing
   data->error.type = JET_NO_MORE;
+  return 0;
 }
 
 char* jsonDataToString(JsonParser* parser, JsonData* data)
@@ -321,4 +330,25 @@ double jsonDataToNumber(JsonParser* parser, JsonData* data)
     return atof(parser->str + data->start);
   }
   return 0.0;
+}
+
+int acceptJson(JsonParser* parser, JsonData* data, JsonType type)
+{
+  // Parse the next item for our look-ahead.
+  // If the look-ahead is already loaded, this will effectively change nothing.
+  parseJson(parser, &parser->lookAhead);
+  parser->lookAheadAvailable = 1;
+
+  // Save the data, regardless of any errors, etc.
+  *data = parser->lookAhead;
+
+  // If the data has no errors, and it is the correct type, we will consume the
+  // look-ahead data.
+  if (data->error.type == JET_NONE && data->type == type) {
+    parser->lookAheadAvailable = 0;
+    return 1;
+  }
+
+  // We either found an error, or found the wrong type
+  return 0;
 }

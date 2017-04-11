@@ -168,13 +168,12 @@ static int getWorkspaceInfo(Workspace* workspaces)
   initJsonParser(&jParser, output, strlen(output));
 
   // Start with the array
-  parseJson(&jParser, &jData);
-  if (jData.error.type != JET_NONE || jData.type != JT_ARRAY_START) {
+  if (acceptJson(&jParser, &jData, JT_ARRAY_START) == 0) {
     return 1;
   }
 
   // Loop through workspaces
-  while (1) {
+  while (acceptJson(&jParser, &jData, JT_ARRAY_END) == 0) {
 
     Workspace workspace;
     size_t workspaceIndex;
@@ -185,45 +184,29 @@ static int getWorkspaceInfo(Workspace* workspaces)
     workspace.urgent = 0;
     workspaceIndex = 0;
 
-    // Open the workspace object (or finish the array)
-    parseJson(&jParser, &jData);
-    if (jData.error.type != JET_NONE) {
-      return 1;
-    }
-    if (jData.type == JT_ARRAY_END) {
-      break;
-    }
-    if (jData.type != JT_OBJECT_START) {
+    // Open the workspace object
+    if (acceptJson(&jParser, &jData, JT_OBJECT_START) == 0) {
       return 1;
     }
 
     // Loop through the workspace members
-    while (1) {
+    while (acceptJson(&jParser, &jData, JT_OBJECT_END) == 0) {
 
-      // Get the field name (or the workspace-closing brace)
-      parseJson(&jParser, &jData);
-      if (jData.error.type != JET_NONE) {
-        return 1;
-      }
-      if (jData.type == JT_OBJECT_END) {
-        break;
-      }
-      if (jData.type != JT_STRING) {
+      // Get the field name
+      if (acceptJson(&jParser, &jData, JT_STRING) == 0) {
         return 1;
       }
       char* fieldName = jsonDataToString(&jParser, &jData);
 
       // Get the field value
-      parseJson(&jParser, &jData);
-      if (jData.error.type != JET_NONE) {
+      if (parseJson(&jParser, &jData) == 0) {
         return 1;
       }
 
       // If this is a nested object (like "rect"), we need to skip it
       if (jData.type == JT_OBJECT_START) {
         while (jData.type != JT_OBJECT_END) {
-          parseJson(&jParser, &jData);
-          if (jData.error.type != JET_NONE) {
+          if (parseJson(&jParser, &jData) == 0) {
             return 1;
           }
         }
