@@ -48,19 +48,19 @@ RadioReceiver* newRadioReceiver()
     return NULL;
   }
 
-  // Bind the socket
-  if (bind(sockFd, (struct sockaddr*)&addr, sizeof addr) == -1) {
-    printf("Could not bind socket. errno=%i\n", errno);
-    close(sockFd);
-    return NULL;
-  }
-
   // Set the socket options so the port can be re-used.
   // This is useful when minfo is being started and stopped in quick succession
   // during development, so we don't have to wait for the TCP timeout.
   if (setsockopt(sockFd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof reuse) == -1 ||
       setsockopt(sockFd, SOL_SOCKET, SO_REUSEPORT, &reuse, sizeof reuse) == -1) {
     printf("Could not set socket options. errno=%i\n", errno);
+    close(sockFd);
+    return NULL;
+  }
+
+  // Bind the socket
+  if (bind(sockFd, (struct sockaddr*)&addr, sizeof addr) == -1) {
+    printf("Could not bind socket. errno=%i\n", errno);
     close(sockFd);
     return NULL;
   }
