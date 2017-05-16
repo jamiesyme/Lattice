@@ -1,11 +1,11 @@
 #pragma once
 
 // A module is a rendered component that's controlled and managed by the hub.
-// You can think of a module as a widget in MInfo. We will have a module to
-// display the time, another module to display the date, etc.
+// You can think of a module as a widget. We will have a module to display the
+// time, another module to display the date, etc.
 
 // ModuleType is stored in a separate file because some other files (namely
-// minfo.c and minfo-msg.c) only require the module type information.
+// lattice.c and lattice-msg.c) only require the module type information.
 #include "module-type.h"
 #include "time-utils.h"
 
@@ -17,12 +17,12 @@ typedef void (*ModuleFreeFunc)(Module*);
 
 // A module can be in one of three states:
 //   MS_OFF:         Nothing is rendered.
-//                   Related command: `minfo-msg hide`
+//                   Related command: `lattice-msg hide`
 //   MS_ON_CONSTANT: Module is rendered with a constant/full opacity.
-//                   Related command: `minfo-msg show`
+//                   Related command: `lattice-msg show`
 //   MS_ON_DYNAMIC:  This is for module updates. The module is faded in, rendered
 //                   at full opacity for some duration, and then faded out.
-//                   Related command: `minfo-msg show-update ...`
+//                   Related command: `lattice-msg show-update ...`
 typedef enum ModuleState {
   MS_OFF,
   MS_ON_CONSTANT,
@@ -45,7 +45,7 @@ typedef struct ModuleOpacity {
 
 struct Module {
   // Read-only after init.
-  // Used to identify module when running `minfo-msg show-update ...`
+  // Used to identify module when running `lattice-msg show-update ...`
   // Default: MT_UNKNOWN
   ModuleType type;
 

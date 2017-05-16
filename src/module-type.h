@@ -1,7 +1,7 @@
 #pragma once
 
 // The module type is stored in a separate file from module because some other
-// files (namely minfo.c and minfo-msg.c) only require the module type
+// files (namely lattice.c and lattice-msg.c) only require the module type
 // information.
 
 typedef enum ModuleType {

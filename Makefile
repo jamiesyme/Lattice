@@ -1,21 +1,21 @@
 CC=gcc
 
-MINFO_LIBS=pangocairo x11 xinerama
-MINFO_CFLAGS=-Wall $(shell pkg-config --cflags $(MINFO_LIBS))
-MINFO_LDFLAGS=$(shell pkg-config --libs $(MINFO_LIBS))
-MINFO_SOURCES=src/minfo.c src/audio-module.c src/command-utils.c src/date-module.c src/draw-utils.c src/frame-limiter.c src/hub.c src/json.c src/module.c src/module-type.c src/radio.c src/surface.c src/time-module.c src/time-utils.c src/workspace-module.c
+LATTICE_LIBS=pangocairo x11 xinerama
+LATTICE_CFLAGS=-Wall $(shell pkg-config --cflags $(LATTICE_LIBS))
+LATTICE_LDFLAGS=$(shell pkg-config --libs $(LATTICE_LIBS))
+LATTICE_SOURCES=src/lattice.c src/audio-module.c src/command-utils.c src/date-module.c src/draw-utils.c src/frame-limiter.c src/hub.c src/json.c src/module.c src/module-type.c src/radio.c src/surface.c src/time-module.c src/time-utils.c src/workspace-module.c
 
-MINFO_MSG_CFLAGS=-Wall
-MINFO_MSG_LDFLAGS=
-MINFO_MSG_SOURCES=src/minfo-msg.c src/module-type.c src/radio.c
+LATTICE_MSG_CFLAGS=-Wall
+LATTICE_MSG_LDFLAGS=
+LATTICE_MSG_SOURCES=src/lattice-msg.c src/module-type.c src/radio.c
 
-all: minfo minfo_msg
+all: lattice lattice_msg
 
-minfo: $(MINFO_SOURCES)
-	@$(CC) $(MINFO_CFLAGS) $(MINFO_SOURCES) $(MINFO_LDFLAGS) -o minfo
+lattice: $(LATTICE_SOURCES)
+	@$(CC) $(LATTICE_CFLAGS) $(LATTICE_SOURCES) $(LATTICE_LDFLAGS) -o lattice
 
-minfo_msg: $(MINFO_MSG_SOURCES)
-	@$(CC) $(MINFO_MSG_CFLAGS) $(MINFO_MSG_SOURCES) $(MINFO_MSG_LDFLAGS) -o minfo-msg
+lattice_msg: $(LATTICE_MSG_SOURCES)
+	@$(CC) $(LATTICE_MSG_CFLAGS) $(LATTICE_MSG_SOURCES) $(LATTICE_MSG_LDFLAGS) -o lattice-msg
 
 clean:
-	@rm -f minfo minfo-msg
+	@rm -f lattice lattice-msg

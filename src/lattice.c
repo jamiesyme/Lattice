@@ -13,7 +13,7 @@ typedef struct App {
   // Manages and renders all of the modules
   Hub* hub;
 
-  // Listens for messages from minfo-msg
+  // Listens for messages from lattice-msg
   RadioReceiver* radio;
 
   // This flag is set after receiving a RMSG_STOP message

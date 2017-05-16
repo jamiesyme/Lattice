@@ -8,17 +8,17 @@
 static void displayUsage()
 {
   printf("Usage:\n");
-  printf("  minfo-msg hide\n");
-  printf("  minfo-msg show\n");
-  printf("  minfo-msg show-update (audio|date|time|workspace)\n");
-  printf("  minfo-msg stop\n");
-  printf("  minfo-msg toggle\n");
+  printf("  lattice-msg hide\n");
+  printf("  lattice-msg show\n");
+  printf("  lattice-msg show-update (audio|date|time|workspace)\n");
+  printf("  lattice-msg stop\n");
+  printf("  lattice-msg toggle\n");
 }
 
 static void displayShowUpdateUsage()
 {
   printf("Usage:\n");
-  printf("  minfo-msg show-update (audio|date|time|workspace)\n");
+  printf("  lattice-msg show-update (audio|date|time|workspace)\n");
 }
 
 static int sendHide()

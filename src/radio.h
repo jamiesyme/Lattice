@@ -1,6 +1,6 @@
 #pragma once
 
-// MInfo has a server part (minfo) and a client part (minfo-msg). They
+// Lattice has a server part (lattice) and a client part (lattice-msg). They
 // communicate by radio, which uses a TCP socket internally.
 
 // Messages are sent and received in the RadioMsg format. Below are all the
@@ -28,7 +28,7 @@ void freeRadioMsg(RadioMsg* msg);
 
 // A radio receiver must be created to receive any messages. There is currently
 // no way to specify which port to open the socket on, so creating two radio
-// receivers will fail with undefined behaviour.
+// receivers will have undefined behaviour.
 typedef struct RadioReceiver RadioReceiver;
 
 RadioReceiver* newRadioReceiver();
@@ -44,10 +44,9 @@ void waitForRadioMsg(RadioReceiver* receiver, RadioMsg* msg);
 int pollForRadioMsg(RadioReceiver* receiver, RadioMsg* msg);
 
 
-// minfo-msg will virtually never send more than one message per run, so no
-// radio transmitter object is used to save the connection between calls.
-// Instead, sendRadioMsg() will open a connection, send the message, and then
-// close.
+// lattice-msg will virtually always send one message per run, so no radio
+// transmitter object is used to save the connection between calls. Instead,
+// sendRadioMsg() will open a connection, send the message, and then close.
 // Non-zero will be returned upon success.
 // TODO: Consider using a UDP socket instead of TCP. I've never used them
 // before, but this sounds like a solid use case for them.
