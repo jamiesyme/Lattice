@@ -63,8 +63,8 @@ struct Module {
   // updateModuleOpacity().
   // Defaults:
   //   full: 0.8
-  //   fadeInDuration: 50
-  //   holdDuration: 1000
+  //   fadeInDuration: 100
+  //   holdDuration: 1500
   //   fadeOutDuration: 500
   //   timeAccum: 0
   ModuleOpacity opacityObj;

@@ -107,8 +107,7 @@ void waitForRadioMsg(RadioReceiver* receiver, RadioMsg* msgOut)
     }
 
     // Get the message from the client.
-    // If the client disconnects or sends an invalid message, readRadioMsg()
-    // will return zero.
+    // If the client sends a valid message, readRadioMsg() will return non-zero.
     if (readRadioMsg(sockFd, msgOut)) {
       close(sockFd);
       return;
