@@ -1,5 +1,6 @@
 #include <stdio.h>
 
+#include "app-config.h"
 #include "frame-limiter.h"
 #include "hub.h"
 #include "module-type.h"
@@ -7,6 +8,8 @@
 
 
 typedef struct App {
+  AppConfig config;
+
   // Used to cap the framerate at 60 fps
   FrameLimiter* frameLimiter;
 
@@ -28,8 +31,28 @@ int main()
   App app;
   RadioMsg msg;
 
+  // TODO: Load config from disk
+  app.config.moduleAlertDuration = 1500;
+  app.config.moduleCloseMoveDuration = 200;
+  app.config.moduleCloseMoveMethod = IM_LINEAR;
+  app.config.moduleBackgroundColor = (Color){1.0f, 1.0f, 1.0f, 1.0f};
+  app.config.moduleBorderColor = (Color){0.0f, 0.0f, 0.0f, 1.0f};
+  app.config.moduleBorderSize = 2.0f;
+  app.config.moduleLowerMoveDuration = 200;
+  app.config.moduleLowerMoveMethod = IM_LINEAR;
+  app.config.moduleMarginSize = 25;
+  app.config.moduleMoveDuration = 200;
+  app.config.moduleMoveMethod = IM_LINEAR;
+  app.config.moduleOpenMoveDuration = 200;
+  app.config.moduleOpenMoveMethod = IM_LINEAR;
+  app.config.modulePaddingSize = (Dimensions){75.0f, 25.0f};
+  app.config.moduleRaiseMoveDuration = 200;
+  app.config.moduleRaiseMoveMethod = IM_LINEAR;
+  app.config.windowOffset = (Point){0.0f, 25.0f};
+
+  // Initialize the app
   app.frameLimiter = newFrameLimiter(60);
-  app.hub = newHub();
+  app.hub = newHub(&app.config);
   app.radio = newRadioReceiver();
   app.shouldQuit = 0;
 

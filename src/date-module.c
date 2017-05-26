@@ -5,6 +5,14 @@
 #include "module.h"
 #include "surface.h"
 
+#define DAYS_WIDTH 150
+#define DRAW_WIDTH 150
+#define DRAW_HEIGHT 60
+#define PRIMARY_FONT_NAME "monaco"
+#define PRIMARY_FONT_SIZE 32
+#define SECONDARY_FONT_NAME "monaco"
+#define SECONDARY_FONT_SIZE 16
+
 
 // Compatible with tm.tm_wday
 typedef enum Weekday {
@@ -26,9 +34,9 @@ void renderDateModule(Module* module, Surface* surface);
 void initDateModule(Module* module)
 {
   module->type = MT_DATE;
-  module->width = 250;
-  module->height = 120;
   module->renderFunc = renderDateModule;
+
+  setModuleDrawSize(module, (Dimensions){DRAW_WIDTH, DRAW_HEIGHT});
 }
 
 void renderDateModule(Module* module, Surface* surface)
@@ -42,36 +50,30 @@ void renderDateModule(Module* module, Surface* surface)
   char strTime[16];
   strftime(strTime, sizeof strTime, "%b %-d", tm);
 
-  // Draw the border and background rects
-  float opacity = getModuleOpacity(module);
-  int border = 4;
-  setDrawColor(surface, 0, 0, 0, opacity);
-  drawRect(surface, 0, 0, module->width, module->height);
-  setDrawColor(surface, 1.0, 1.0, 1.0, opacity);
-  drawRect(surface,
-           border, border,
-           module->width - border * 2,
-           module->height - border * 2);
-
   // Draw the date
-  setDrawColor(surface, 0, 0, 0, opacity);
-  TextSurface* textSurface = renderText(surface, 32, "monaco", strTime);
-  drawText(surface, textSurface, module->width / 2, module->height / 3, 1);
+  setDrawColor4(surface, 0, 0, 0, 1);
+  TextSurface* textSurface = renderText(surface,
+                                        PRIMARY_FONT_SIZE,
+                                        PRIMARY_FONT_NAME,
+                                        strTime);
+  drawText(surface, textSurface, DRAW_WIDTH / 2, DRAW_HEIGHT / 3 - 5, 1);
   freeTextSurface(textSurface);
 
   // Draw the days of the week
-  int daysWidth = 150;
-  int dayDiff = daysWidth / 7;
+  int dayDiff = DAYS_WIDTH / 7;
   for (Weekday d = SUNDAY; d <= SATURDAY; ++d) {
-    int x = module->width / 2 - daysWidth / 2 + dayDiff * d + dayDiff / 2;
-    int y = module->height / 4 * 3 - 5;
+    int x = DRAW_WIDTH / 2 - DAYS_WIDTH / 2 + dayDiff * d + dayDiff / 2;
+    int y = DRAW_HEIGHT / 4 * 3 + 5;
     if (d == tm->tm_wday) {
-      setDrawColor(surface, 0, 0, 0, opacity);
-      drawRect(surface, x - 7, y + 10, 14, 1);
+      setDrawColor4(surface, 0, 0, 0, 1);
+      drawRect4(surface, x - 7, y + 10, 14, 1);
     } else {
-      setDrawColor(surface, 0.6, 0.6, 0.6, opacity);
+      setDrawColor4(surface, 0.6f, 0.6f, 0.6f, 1.0f);
     }
-    textSurface = renderText(surface, 16, "monaco", weekdayStrings[d]);
+    textSurface = renderText(surface,
+                             SECONDARY_FONT_SIZE,
+                             SECONDARY_FONT_NAME,
+                             weekdayStrings[d]);
     drawText(surface, textSurface, x, y, 1);
     freeTextSurface(textSurface);
   }

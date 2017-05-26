@@ -13,7 +13,12 @@ struct TextSurface {
 };
 
 
-void setDrawColor(Surface* surface, float r, float g, float b, float a)
+void setDrawColor(Surface* surface, Color color)
+{
+  setDrawColor4(surface, color.r, color.g, color.b, color.a);
+}
+
+void setDrawColor4(Surface* surface, float r, float g, float b, float a)
 {
   cairo_set_source_rgba(getCairoContext(surface), r, g, b, a);
 }
@@ -27,11 +32,11 @@ void drawFullRect(Surface* surface)
   cairo_restore(cr);
 }
 
-void drawRect(Surface* surface,
-              int x,
-              int y,
-              unsigned int width,
-              unsigned int height)
+void drawRect4(Surface* surface,
+               int x,
+               int y,
+               unsigned int width,
+               unsigned int height)
 {
   cairo_t* cr = getCairoContext(surface);
   cairo_save(cr);
@@ -93,6 +98,18 @@ void drawText(Surface* surface,
   cairo_move_to(cr, x, y);
   pango_cairo_show_layout(cr, textSurface->fontLayout);
   cairo_restore(cr);
+}
+
+Dimensions getTextDimensions(TextSurface* textSurface)
+{
+  PangoRectangle inkRect, logicalRect;
+  pango_layout_get_extents(textSurface->fontLayout, &inkRect, &logicalRect);
+
+  Dimensions dim = {
+    logicalRect.width / PANGO_SCALE,
+    logicalRect.height / PANGO_SCALE
+  };
+  return dim;
 }
 
 void freeTextSurface(TextSurface* textSurface)

@@ -3,7 +3,10 @@
 // draw-utils is a collection of commonly used draw functions. Everything done
 // here can also be done manually by getting the cairo context from the surface.
 
+#include "geometry-utils.h"
+
 typedef struct Surface Surface;
+
 
 // You can imagine that a text surface is an image. You must first render the
 // text to an image using renderText(), and then you can draw it to the surface
@@ -11,18 +14,27 @@ typedef struct Surface Surface;
 // freeTextSurface().
 typedef struct TextSurface TextSurface;
 
+typedef struct Color {
+  float r;
+  float g;
+  float b;
+  float a;
+} Color;
+
 
 // Equivalent to cairo_set_source_rgba().
-void setDrawColor(Surface* surface, float r, float g, float b, float a);
+void setDrawColor(Surface* surface, Color color);
+void setDrawColor4(Surface* surface, float r, float g, float b, float a);
+
 
 // Draws a rectangle covering the entire surface.
 void drawFullRect(Surface* surface);
 
-void drawRect(Surface* surface,
-              int x,
-              int y,
-              unsigned int width,
-              unsigned int height);
+void drawRect4(Surface* surface,
+               int x,
+               int y,
+               unsigned int width,
+               unsigned int height);
 
 // Loads the fontName at the specified size and renders the text to a text
 // surface. You can then draw this text to the screen using a subsequent call to
@@ -39,5 +51,7 @@ void drawText(Surface* surface,
               int x,
               int y,
               int centered);
+
+Dimensions getTextDimensions(TextSurface* textSurface);
 
 void freeTextSurface(TextSurface* textSurface);

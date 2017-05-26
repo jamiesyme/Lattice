@@ -172,8 +172,6 @@ Surface* newSurface(int x, int y, unsigned int width, unsigned int height)
   surface->xWindow = xWindow;
   surface->cSurface = cs;
   surface->cContext = cr;
-  surface->width = width;
-  surface->height = height;
   return surface;
 }
 
@@ -229,12 +227,12 @@ void setSurfaceSize(Surface* surface, unsigned int width, unsigned int height)
 
 unsigned int getSurfaceWidth(Surface* surface)
 {
-  return surface->width;
+  return (unsigned int)cairo_xlib_surface_get_width(surface->cSurface);
 }
 
 unsigned int getSurfaceHeight(Surface* surface)
 {
-  return surface->height;
+  return (unsigned int)cairo_xlib_surface_get_height(surface->cSurface);
 }
 
 cairo_t* getCairoContext(Surface* surface)
