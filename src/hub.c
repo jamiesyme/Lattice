@@ -207,6 +207,11 @@ void showModuleUpdate(Hub* hub, ModuleType moduleType)
   }
 }
 
+void updateHubAfterSleep(Hub* hub)
+{
+  updateModuleDirectorAfterSleep(hub->moduleDirector);
+}
+
 Module* addModuleToHub(Hub* hub)
 {
   // Allocate

@@ -12,6 +12,7 @@ ModuleDirector* newModuleDirector(AppConfig* config);
 void freeModuleDirector(ModuleDirector* director);
 
 void updateModuleDirector(ModuleDirector* director);
+void updateModuleDirectorAfterSleep(ModuleDirector* director);
 
 void addModuleToDirector(ModuleDirector* director, Module* module);
 

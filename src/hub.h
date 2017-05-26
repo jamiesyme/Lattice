@@ -38,3 +38,8 @@ void toggleHub(Hub* hub);
 // If a module is off, this will temporarily turn it on by setting the state to
 // MS_ON_DYNAMIC. The module will fade in and fade out.
 void showModuleUpdate(Hub* hub, ModuleType mt);
+
+// Since the application sleeps when there is nothing to do, the delta times can
+// get huge. To compensate for this, this function is called after sleeping for
+// any significant amount of time.
+void updateHubAfterSleep(Hub* hub);

@@ -106,6 +106,14 @@ void updateModuleDirector(ModuleDirector* director)
   }
 }
 
+void updateModuleDirectorAfterSleep(ModuleDirector* director)
+{
+  // Updating our last update time will reduce the delta time to near zero for
+  // the first update after sleeping. After this first update, the delta times
+  // should return to normal.
+  director->lastUpdateTime = getTimeInMilliseconds();
+}
+
 void addModuleToDirector(ModuleDirector* director, Module* module)
 {
   director->moduleCount++;
@@ -191,11 +199,6 @@ void openModulesWithDirector(ModuleDirector* director)
     // Put the margin between the modules
     yPos -= director->appConfig->moduleMarginSize;
   }
-
-  // Sometimes there is a large time duration between closing the modules and
-  // calling updateModuleDirector(), so we have to reduce the delta time in
-  // those cases.
-  director->lastUpdateTime = getTimeInMilliseconds();
 }
 
 void closeModulesWithDirector(ModuleDirector* director)

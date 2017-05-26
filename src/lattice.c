@@ -80,6 +80,11 @@ int main()
       // MS_OFF), we can check for messages in a blocking way. This will allow
       // our application to sleep until the user sends another request.
       waitForRadioMsg(app.radio, &msg);
+
+      // After sleeping, we have to let the hub know
+      updateHubAfterSleep(app.hub);
+
+      // Then we can process the message as normal
       processMsg(&app, msg);
       freeRadioMsg(&msg);
     }
