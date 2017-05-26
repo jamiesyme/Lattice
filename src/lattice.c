@@ -102,16 +102,16 @@ int main()
 static void processMsg(App* app, RadioMsg msg)
 {
   switch (msg.type) {
+  case RMSG_ALERT:
+    alertHubModule(app->hub, *(ModuleType*)msg.data);
+    break;
+
   case RMSG_HIDE_ALL:
-    hideHub(app->hub);
+    hideAllHubModules(app->hub);
     break;
 
   case RMSG_SHOW_ALL:
-    showHub(app->hub);
-    break;
-
-  case RMSG_SHOW_UPDATE:
-    showModuleUpdate(app->hub, *(ModuleType*)msg.data);
+    showAllHubModules(app->hub);
     break;
 
   case RMSG_STOP:
@@ -119,7 +119,7 @@ static void processMsg(App* app, RadioMsg msg)
     break;
 
   case RMSG_TOGGLE_ALL:
-    toggleHub(app->hub);
+    toggleAllHubModules(app->hub);
     break;
 
   default:

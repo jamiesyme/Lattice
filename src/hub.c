@@ -176,28 +176,28 @@ void renderHub(Hub* hub)
   }
 }
 
-void showHub(Hub* hub)
+void showAllHubModules(Hub* hub)
 {
   openModulesWithDirector(hub->moduleDirector);
   hub->allModulesAreOpen = 1;
 }
 
-void hideHub(Hub* hub)
+void hideAllHubModules(Hub* hub)
 {
   closeModulesWithDirector(hub->moduleDirector);
   hub->allModulesAreOpen = 0;
 }
 
-void toggleHub(Hub* hub)
+void toggleAllHubModules(Hub* hub)
 {
   if (hub->allModulesAreOpen) {
-    hideHub(hub);
+    hideAllHubModules(hub);
   } else {
-    showHub(hub);
+    showAllHubModules(hub);
   }
 }
 
-void showModuleUpdate(Hub* hub, ModuleType moduleType)
+void alertHubModule(Hub* hub, ModuleType moduleType)
 {
   for (size_t i = 0; i < hub->moduleCount; ++i) {
     Module* module = &hub->modules[i];

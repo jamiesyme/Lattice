@@ -19,10 +19,10 @@ void freeHub(Hub* hub);
 // Returns non-zero if renderHub() should be called. The result may only change
 // after the following function calls:
 //  + renderHub()
-//  + showHub()
-//  + hideHub()
-//  + toggleHub()
-//  + showModuleUpdate()
+//  + showAllHubModules()
+//  + hideAllHubModules()
+//  + toggleAllHubModules()
+//  + alertHubModule()
 // This means that after zero is returned, it is safe to sleep until further hub
 // interactions.
 int shouldRenderHub(Hub* hub);
@@ -31,13 +31,12 @@ int shouldRenderHub(Hub* hub);
 void renderHub(Hub* hub);
 
 // Turns all of the modules on or off.
-void showHub(Hub* hub);
-void hideHub(Hub* hub);
-void toggleHub(Hub* hub);
+void showAllHubModules(Hub* hub);
+void hideAllHubModules(Hub* hub);
+void toggleAllHubModules(Hub* hub);
 
-// If a module is off, this will temporarily turn it on by setting the state to
-// MS_ON_DYNAMIC. The module will fade in and fade out.
-void showModuleUpdate(Hub* hub, ModuleType mt);
+// If a module is closed, this will open it temporarily.
+void alertHubModule(Hub* hub, ModuleType mt);
 
 // Since the application sleeps when there is nothing to do, the delta times can
 // get huge. To compensate for this, this function is called after sleeping for
