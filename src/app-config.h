@@ -8,6 +8,7 @@
 
 typedef struct AppConfig {
   Milliseconds        moduleAlertDuration;     // module-director.c
+  Milliseconds        moduleCloseDelay;        // module-director.c
   Milliseconds        moduleCloseMoveDuration; // module-director.c
   InterpolationMethod moduleCloseMoveMethod;   // module-director.c
   Color               moduleBackgroundColor;   // module-renderer.c
@@ -18,6 +19,7 @@ typedef struct AppConfig {
   float               moduleMarginSize;        // module-director.c
   Milliseconds        moduleMoveDuration;      // module-director.c
   InterpolationMethod moduleMoveMethod;        // module-director.c
+  Milliseconds        moduleOpenDelay;         // module-director.c
   Milliseconds        moduleOpenMoveDuration;  // module-director.c
   InterpolationMethod moduleOpenMoveMethod;    // module-director.c
   Dimensions          modulePaddingSize;       // module-renderer.c

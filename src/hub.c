@@ -149,12 +149,12 @@ void renderHub(Hub* hub)
     Rect surfaceRect;
     surfaceRect.x = MIN(0, rendererRect.x);
     surfaceRect.y = MIN(0, rendererRect.y);
-    surfaceRect.width = rendererRect.width;
-    surfaceRect.height = rendererRect.height;
+    //surfaceRect.width = rendererRect.width;
+    //surfaceRect.height = rendererRect.height;
     // These assignments will clamp the window size to the edge of the window,
     // but they also cause a lot of lag
-    //surfaceRect.width = MIN(ABS(surfaceRect.x), rendererRect.width);
-    //surfaceRect.height = MIN(ABS(surfaceRect.y), rendererRect.height);
+    surfaceRect.width = MIN(ABS(surfaceRect.x), rendererRect.width);
+    surfaceRect.height = MIN(ABS(surfaceRect.y), rendererRect.height);
 
     updateSurfaceRect(hub, surfaceRect);
     mapSurface(hub->surface);

@@ -33,6 +33,7 @@ int main()
 
   // TODO: Load config from disk
   app.config.moduleAlertDuration = 1500;
+  app.config.moduleCloseDelay = 100;
   app.config.moduleCloseMoveDuration = 200;
   app.config.moduleCloseMoveMethod = IM_LINEAR;
   app.config.moduleBackgroundColor = (Color){1.0f, 1.0f, 1.0f, 1.0f};
@@ -43,6 +44,7 @@ int main()
   app.config.moduleMarginSize = 25;
   app.config.moduleMoveDuration = 200;
   app.config.moduleMoveMethod = IM_LINEAR;
+  app.config.moduleOpenDelay = 100;
   app.config.moduleOpenMoveDuration = 200;
   app.config.moduleOpenMoveMethod = IM_LINEAR;
   app.config.modulePaddingSize = (Dimensions){75.0f, 25.0f};

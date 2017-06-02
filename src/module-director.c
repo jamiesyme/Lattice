@@ -149,6 +149,7 @@ void openModulesWithDirector(ModuleDirector* director)
   Milliseconds duration;
   InterpolationMethod method;
 
+  Milliseconds waitTime = 0;
   float yPos = -yOffset;
   for (size_t i = 0; i < director->moduleCount; ++i) {
     DirectedModule* directedModule = &director->modules[i];
@@ -196,6 +197,10 @@ void openModulesWithDirector(ModuleDirector* director)
                             method);
     }
 
+    // Add wait time for the later modules
+    directedModule->waitTimeLeft = waitTime;
+    waitTime += director->appConfig->moduleOpenDelay;
+
     // Put the margin between the modules
     yPos -= director->appConfig->moduleMarginSize;
   }
@@ -207,6 +212,7 @@ void closeModulesWithDirector(ModuleDirector* director)
   Milliseconds duration;
   InterpolationMethod method;
 
+  Milliseconds waitTime = 0;
   for (size_t i = 0; i < director->moduleCount; ++i) {
     DirectedModule* directedModule = &director->modules[i];
 
@@ -219,6 +225,10 @@ void closeModulesWithDirector(ModuleDirector* director)
                           goal,
                           duration,
                           method);
+
+    // Add wait time for the later modules
+    directedModule->waitTimeLeft = waitTime;
+    waitTime += director->appConfig->moduleCloseDelay;
   }
 }
 
