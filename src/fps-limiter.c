@@ -1,29 +1,29 @@
 #include <stdlib.h>
 
-#include "frame-limiter.h"
+#include "fps-limiter.h"
 #include "time-utils.h"
 
 
-typedef struct FrameLimiter {
+typedef struct FpsLimiter {
   int targetFps;
   Milliseconds lastTimeMs;
-} FrameLimiter;
+} FpsLimiter;
 
 
-FrameLimiter* newFrameLimiter(int targetFps)
+FpsLimiter* newFpsLimiter(int targetFps)
 {
-  FrameLimiter* limiter = malloc(sizeof(FrameLimiter));
+  FpsLimiter* limiter = malloc(sizeof(FpsLimiter));
   limiter->targetFps = targetFps;
   limiter->lastTimeMs = getTimeInMilliseconds();
   return limiter;
 }
 
-void freeFrameLimiter(FrameLimiter* limiter)
+void freeFpsLimiter(FpsLimiter* limiter)
 {
   free(limiter);
 }
 
-void applyFrameLimiter(FrameLimiter* limiter)
+void limitFps(FpsLimiter* limiter)
 {
   Milliseconds startTime = limiter->lastTimeMs;
   Milliseconds endTime = getTimeInMilliseconds();

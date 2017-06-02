@@ -1,7 +1,7 @@
 #include <stdio.h>
 
 #include "app-config.h"
-#include "frame-limiter.h"
+#include "fps-limiter.h"
 #include "hub.h"
 #include "module-type.h"
 #include "radio.h"
@@ -10,8 +10,8 @@
 typedef struct App {
   AppConfig config;
 
-  // Used to cap the framerate at 60 fps
-  FrameLimiter* frameLimiter;
+  // Used to cap the frame rate at 60 fps
+  FpsLimiter* fpsLimiter;
 
   // Manages and renders all of the modules
   Hub* hub;
@@ -53,7 +53,7 @@ int main()
   app.config.windowOffset = (Point){0.0f, 25.0f};
 
   // Initialize the app
-  app.frameLimiter = newFrameLimiter(60);
+  app.fpsLimiter = newFpsLimiter(60);
   app.hub = newHub(&app.config);
   app.radio = newRadioReceiver();
   app.shouldQuit = 0;
@@ -91,13 +91,13 @@ int main()
       freeRadioMsg(&msg);
     }
 
-    // This will limit our framerate to a maximum of 60 fps
-    applyFrameLimiter(app.frameLimiter);
+    // This will limit our frame rate to a maximum of 60 fps
+    limitFps(app.fpsLimiter);
   }
 
   freeRadioReceiver(app.radio);
   freeHub(app.hub);
-  freeFrameLimiter(app.frameLimiter);
+  freeFpsLimiter(app.fpsLimiter);
   return 0;
 }
 
