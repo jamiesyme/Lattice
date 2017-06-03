@@ -36,6 +36,7 @@ void updateInterpolatedValue(InterpolatedValue* interpolatedValue,
                                            interpolatedValue->timeDuration);
 
   // Update the current value based on the interpolation method
+  // Check out this website for the algorithms: http://gizma.com/easing/
   float timeMult = 1.0f;
   if (interpolatedValue->timeDuration != 0) {
     timeMult = ((float)interpolatedValue->timeAccumulated /
@@ -57,6 +58,24 @@ void updateInterpolatedValue(InterpolatedValue* interpolatedValue,
   case IM_SINE_EASE_OUT: {
     float sinMult = sin(timeMult * PI / 2.0f);
     interpolatedValue->current = start + diff * sinMult;
+  } break;
+
+  case IM_CUBIC_EASE_OUT: {
+    float t = timeMult - 1.0f;
+    float cubeMult = t * t * t + 1.0f;
+    interpolatedValue->current = start + diff * cubeMult;
+  } break;
+
+  case IM_QUARTIC_EASE_OUT: {
+    float t = timeMult - 1.0f;
+    float quartMult = t * t * t * t - 1.0f;
+    interpolatedValue->current = start - diff * quartMult;
+  } break;
+
+  case IM_QUINTIC_EASE_OUT: {
+    float t = timeMult - 1.0f;
+    float quintMult = t * t * t * t * t + 1.0f;
+    interpolatedValue->current = start + diff * quintMult;
   } break;
   }
 }

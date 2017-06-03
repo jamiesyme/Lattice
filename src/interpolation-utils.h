@@ -3,12 +3,12 @@
 #include "time-utils.h"
 
 typedef enum InterpolationMethod {
-  // Linear interpolation provides constant speed
   IM_LINEAR,
-  // Sine interpolation eases in and eases out
   IM_SINE,
-  // Sine interpolation that only eases out
-  IM_SINE_EASE_OUT
+  IM_SINE_EASE_OUT,
+  IM_CUBIC_EASE_OUT,
+  IM_QUARTIC_EASE_OUT,
+  IM_QUINTIC_EASE_OUT
 } InterpolationMethod;
 
 typedef struct InterpolatedValue {

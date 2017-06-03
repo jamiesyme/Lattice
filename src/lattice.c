@@ -43,9 +43,9 @@ int main()
 
   // TODO: Load config from disk
   app.config.moduleAlertDuration = 1500;
-  app.config.moduleCloseDelay = 100;
-  app.config.moduleCloseMoveDuration = 200;
-  app.config.moduleCloseMoveMethod = IM_LINEAR;
+  app.config.moduleCloseDelay = 65;
+  app.config.moduleCloseMoveDuration = 500;
+  app.config.moduleCloseMoveMethod = IM_QUINTIC_EASE_OUT;
   app.config.moduleBackgroundColor = (Color){1.0f, 1.0f, 1.0f, 1.0f};
   app.config.moduleBorderColor = (Color){0.0f, 0.0f, 0.0f, 1.0f};
   app.config.moduleBorderSize = 2.0f;
@@ -54,9 +54,9 @@ int main()
   app.config.moduleMarginSize = 25;
   app.config.moduleMoveDuration = 200;
   app.config.moduleMoveMethod = IM_LINEAR;
-  app.config.moduleOpenDelay = 100;
-  app.config.moduleOpenMoveDuration = 200;
-  app.config.moduleOpenMoveMethod = IM_LINEAR;
+  app.config.moduleOpenDelay = 65;
+  app.config.moduleOpenMoveDuration = 500;
+  app.config.moduleOpenMoveMethod = IM_QUINTIC_EASE_OUT;
   app.config.modulePaddingSize = (Dimensions){75.0f, 25.0f};
   app.config.moduleRaiseMoveDuration = 200;
   app.config.moduleRaiseMoveMethod = IM_LINEAR;
