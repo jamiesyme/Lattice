@@ -6,9 +6,12 @@
 #include "draw-utils.h"
 #include "json.h"
 #include "module.h"
-#include "surface.h"
 #include "workspace-module.h"
 
+#define DRAW_WIDTH 160
+#define DRAW_HEIGHT 58
+#define FONT_NAME "monaco"
+#define FONT_SIZE 16
 #define WORKSPACE_COUNT 10
 
 
@@ -24,17 +27,17 @@ typedef struct Workspace {
 // least WORKSPACE_COUNT workspaces. Returns zero on success.
 static int getWorkspaceInfo(Workspace* workspaces);
 
-void renderWorkspaceModule(Module* module, Surface* surface);
+void renderWorkspaceModule(Module* module, cairo_t* cairoContext);
 
 void initWorkspaceModule(Module* module)
 {
   module->type = MT_WORKSPACE;
-  module->width = 250;
-  module->height = 100;
   module->renderFunc = renderWorkspaceModule;
+
+  setModuleDrawSize(module, (Dimensions){DRAW_WIDTH, DRAW_HEIGHT});
 }
 
-void renderWorkspaceModule(Module* module, Surface* surface)
+void renderWorkspaceModule(Module* module, cairo_t* cairoContext)
 {
   // Get the workspace info
   Workspace workspaces[WORKSPACE_COUNT];
@@ -43,20 +46,7 @@ void renderWorkspaceModule(Module* module, Surface* surface)
     return;
   }
 
-  // Draw the border and background rects
-  float opacity = getModuleOpacity(module);
-  int border = 4;
-  setDrawColor(surface, 0, 0, 0, opacity);
-  drawRect(surface, 0, 0, module->width, module->height);
-  setDrawColor(surface, 1.0, 1.0, 1.0, opacity);
-  drawRect(surface,
-           border, border,
-           module->width - border * 2,
-           module->height - border * 2);
-
   // Draw the workspaces, split between two rows
-  int areaWidth = 160;
-  int areaHeight = 58;
   int outerWidth = 24;
   int outerHeight = 24;
   int borderSize = 3;
@@ -67,14 +57,13 @@ void renderWorkspaceModule(Module* module, Surface* surface)
 
     // Compute the workspace position
     int outerX, outerY;
-    outerX = module->width / 2;
-    outerX -= areaWidth / 2;
-    outerX += (areaWidth - outerWidth) * (i % columnCount) / (columnCount - 1);
-    outerY = module->height / 2;
+    //outerX = module->width / 2;
+    //outerX -= DRAW_WIDTH / 2;
+    outerX = (DRAW_WIDTH - outerWidth) * (i % columnCount) / (columnCount - 1);
     if (i < columnCount) {
-      outerY -= areaHeight / 2;
+      outerY = 0;
     } else {
-      outerY += areaHeight / 2 - outerHeight;
+      outerY = DRAW_HEIGHT - outerHeight;
     }
     int innerX, innerY;
     innerX = outerX + borderSize;
@@ -83,44 +72,39 @@ void renderWorkspaceModule(Module* module, Surface* surface)
     // Render the workspace index text
     char workspaceIndexStr[2];
     snprintf(workspaceIndexStr, 2, "%i", (int)(i + 1) % 10);
-    TextSurface* ts = renderText(surface, 16, "monaco", workspaceIndexStr);
+    TextSurface* ts = renderText(cairoContext,
+                                 FONT_SIZE,
+                                 FONT_NAME,
+                                 workspaceIndexStr);
     int tsX = innerX + innerWidth / 2;
     int tsY = innerY + innerHeight / 2;
 
     // Get the draw color determined by the workspace state
-    float r, g, b;
+    Color workspaceColor;
     if (workspaces[i].urgent) {
-      r = 0.8;
-      g = 0.2;
-      b = 0.2;
+      workspaceColor = (Color){0.8f, 0.2f, 0.2f, 1.0f};
 
     } else if (workspaces[i].focused) {
-      r = 0.1;
-      g = 0.1;
-      b = 0.1;
+      workspaceColor = (Color){0.1f, 0.1f, 0.1f, 1.0f};
 
     } else if (workspaces[i].empty) {
-      r = 0.7;
-      g = 0.7;
-      b = 0.7;
+      workspaceColor = (Color){0.7f, 0.7f, 0.7f, 1.0f};
 
     } else {
-      r = 0.1;
-      g = 0.1;
-      b = 0.1;
+      workspaceColor = (Color){0.1f, 0.1f, 0.1f, 1.0f};
     }
 
     // Draw the workspace
-    setDrawColor(surface, r, g, b, opacity);
-    drawRect(surface, outerX, outerY, outerWidth, outerHeight);
+    setDrawColor(cairoContext, workspaceColor);
+    drawRect4(cairoContext, outerX, outerY, outerWidth, outerHeight);
     if (workspaces[i].focused) {
-      setDrawColor(surface, 1, 1, 1, opacity);
-      drawText(surface, ts, tsX, tsY, 1);
+      setDrawColor4(cairoContext, 1, 1, 1, 1);
+      drawText(cairoContext, ts, tsX, tsY, 1);
     } else {
-      setDrawColor(surface, 1, 1, 1, opacity);
-      drawRect(surface, innerX, innerY, innerWidth, innerHeight);
-      setDrawColor(surface, r, g, b, opacity);
-      drawText(surface, ts, tsX, tsY, 1);
+      setDrawColor4(cairoContext, 1, 1, 1, 1);
+      drawRect4(cairoContext, innerX, innerY, innerWidth, innerHeight);
+      setDrawColor(cairoContext, workspaceColor);
+      drawText(cairoContext, ts, tsX, tsY, 1);
     }
 
     // Free the workspace index text

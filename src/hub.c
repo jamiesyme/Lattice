@@ -1,244 +1,178 @@
 #include <cairo/cairo.h>
-#include <stdio.h>
 #include <stdlib.h>
+#include <stdio.h>
 
-#include "draw-utils.h"
+#include "geometry-utils.h"
 #include "hub.h"
 #include "module.h"
-#include "surface.h"
-#include "time-utils.h"
+#include "module-director.h"
+#include "module-renderer.h"
 
 #include "audio-module.h"
 #include "date-module.h"
 #include "time-module.h"
 #include "workspace-module.h"
 
-#define MAX_MODULES 32
+#define ABS(x) ((x) < 0 ? -(x) : (x))
+#define MIN(x, y) ((x) < (y) ? (x) : (y))
 
 
 typedef struct Hub {
-  // This used to be stored as a linked list, but this is much easier.
-  Module modules[MAX_MODULES];
+  AppConfig* appConfig;
+
+  Module* modules;
   size_t moduleCount;
+  int allModulesAreOpen;
 
-  // Module padding is the vertical space between modules.
-  unsigned int modulePadding;
-
-  // Screen padding is the horizontal and vertical space between the modules and
-  // the bottom right corner of the monitor. This helps position the surface.
-  unsigned int screenPadding;
-
-  // The hub dimensions match the surface (window) dimensions. The hub width is
-  // the max width of any module. The hub height is the sum of each module's
-  // height, plus padding between each module.
-  unsigned int width, height;
-
-  // A surface is a wrapper around a window. It's what we draw to.
-  Surface* surface;
-
-  // This flag tracks the state of all the modules. If they are all MS_OFF, this
-  // flag is cleared; otherwise it's set. It's updated every time renderHub() is
-  // run. Explicitly setting this flag is an effective way to clear the screen,
-  // even if all the modules are off.
-  int shouldRender;
-
-  // In order to update the module opacities we need a delta time. This keeps
-  // track of the time when the last render took place.
-  Milliseconds lastRenderTime;
+  ModuleDirector* moduleDirector;
+  ModuleRenderer* moduleRenderer;
 } Hub;
 
 
-// Calculates the smallest surface size possible that stills allows us to render
-// all of the active modules ("active" meaning "not MS_OFF"), and
-// resizes/repositions the surface.
-// Should be called once per frame.
-static void updateHubSize(Hub* hub)
+static Module* addModuleToHub(Hub* hub)
 {
-  unsigned int newWidth = 0, newHeight = 0;
-
-  for (size_t i = 0; i < hub->moduleCount; ++i) {
-    if (hub->modules[i].state == MS_OFF) {
-      continue;
-    }
-    if (newWidth == 0 || newWidth < hub->modules[i].width) {
-      newWidth = hub->modules[i].width;
-    }
-    if (newHeight > 0) {
-      newHeight += hub->modulePadding;
-    }
-    newHeight += hub->modules[i].height;
-  }
-
-  if (hub->width != newWidth || hub->height != newHeight) {
-    // 1x1 is minimum window size
-    hub->width = newWidth > 0 ? newWidth : 1;
-    hub->height = newHeight > 0 ? newHeight : 1;
-    setSurfaceSize(hub->surface,
-                   hub->width,
-                   hub->height);
-    setSurfacePosition(hub->surface,
-                       -(int)(hub->width + hub->screenPadding),
-                       -(int)(hub->height + hub->screenPadding));
-  }
+	hub->moduleCount++;
+  hub->modules = realloc(hub->modules, sizeof(Module) * hub->moduleCount);
+  initModule(&hub->modules[hub->moduleCount - 1], hub->appConfig);
+  return &hub->modules[hub->moduleCount - 1];
 }
 
-Hub* newHub()
+Hub* newHub(AppConfig* appConfig)
 {
   Hub* hub = malloc(sizeof(Hub));
+  hub->appConfig = appConfig;
+
+  // Init modules
+  hub->allModulesAreOpen = 0;
+  hub->modules = NULL;
   hub->moduleCount = 0;
-  hub->modulePadding = 25;
-  hub->screenPadding = 50;
-  hub->shouldRender = 1;
+  initTimeModule(addModuleToHub(hub));
+  initDateModule(addModuleToHub(hub));
+  initAudioModule(addModuleToHub(hub));
+  initWorkspaceModule(addModuleToHub(hub));
 
-  for (size_t i = 0; i < MAX_MODULES; ++i) {
-    initModule(&hub->modules[i]);
+  // Init module director
+  hub->moduleDirector = newModuleDirector(hub->appConfig);
+  for (size_t i = 0; i < hub->moduleCount; ++i) {
+    addModuleToDirector(hub->moduleDirector, &hub->modules[i]);
   }
-  initTimeModule(&hub->modules[hub->moduleCount++]);
-  initDateModule(&hub->modules[hub->moduleCount++]);
-  initAudioModule(&hub->modules[hub->moduleCount++]);
-  initWorkspaceModule(&hub->modules[hub->moduleCount++]);
 
-  // The surface will be resizes/repositioned each frame to maintain the optimal
-  // size. The "optimal" size is one that obstructs other windows the least. For
-  // now, we will just create the window as small as possible, which is 1x1.
-  // See renderHub() for more info.
-  hub->surface = newSurface(0, 0, 1, 1);
-
-  hub->lastRenderTime = getTimeInMilliseconds();
+  // Init module renderer
+  hub->moduleRenderer = newModuleRenderer(hub->appConfig);
+  for (size_t i = 0; i < hub->moduleCount; ++i) {
+    addModuleToRenderer(hub->moduleRenderer, &hub->modules[i]);
+  }
 
 	return hub;
 }
 
 void freeHub(Hub* hub)
 {
-  freeSurface(hub->surface);
+  freeModuleRenderer(hub->moduleRenderer);
+  freeModuleDirector(hub->moduleDirector);
   for (size_t i = 0; i < hub->moduleCount; ++i) {
-    if (hub->modules[i].freeFunc != NULL) {
-      hub->modules[i].freeFunc(&hub->modules[i]);
+    Module* module = &hub->modules[i];
+    if (module->freeFunc != NULL) {
+      module->freeFunc(module);
     }
   }
+  free(hub->modules);
   free(hub);
 }
 
 int shouldRenderHub(Hub* hub)
 {
-  return hub->shouldRender;
+  // The module renderer will be busy if any module is on-screen.
+  // The module director will be busy if anything is moving.
+  // In both cases, either something needs to be rendered or moved (which also
+  // happens during renderHub()).
+  return (isModuleRendererBusy(hub->moduleRenderer) ||
+          isModuleDirectorBusy(hub->moduleDirector));
 }
 
-static void updateRenderFlag(Hub* hub, Milliseconds delta)
+Rect getHubScreenRect(Hub* hub)
 {
-  hub->shouldRender = 0;
-  for (size_t i = 0; i < hub->moduleCount; ++i) {
-    updateModuleOpacity(&hub->modules[i], delta);
-    if (hub->modules[i].state != MS_OFF) {
-      hub->shouldRender = 1;
-    }
+  // Get the rect of the modules if they were all opened. This is the largest
+  // screen that we need to support.
+  Rect directorRect = getModuleDirectorOpenRect(hub->moduleDirector);
+
+  // The open rect is potentially partially off-screen. The screen rect should be
+  // clamped to the screen.
+  Rect screenRect = directorRect;
+  if (screenRect.x > 0.0f) {
+    screenRect.x = 0.0f;
+  }
+  if (screenRect.y > 0.0f) {
+    screenRect.y = 0.0f;
+  }
+  if (screenRect.x + screenRect.width > 0.0f) {
+    screenRect.width = -screenRect.x;
+  }
+  if (screenRect.y + screenRect.height > 0.0f) {
+    screenRect.height = -screenRect.y;
+  }
+
+  return screenRect;
+}
+
+void renderHub(Hub* hub, cairo_t* cairoContext)
+{
+	Rect screenRect;
+	
+  // Let the module renderer do it's thing
+  if (isModuleRendererBusy(hub->moduleRenderer)) {
+
+	  // Since the window resizes and moves as modules move, we need to correct
+	  // that with a translation.
+	  screenRect = getHubScreenRect(hub);
+    cairo_save(cairoContext);
+    cairo_translate(cairoContext, -screenRect.x, -screenRect.y);
+    renderModules(hub->moduleRenderer, cairoContext);
+    cairo_restore(cairoContext);
+  }
+
+  // Allow the director to move the modules. This happens after the rendering so
+  // that the window can be resized before the next frame.
+  updateModuleDirector(hub->moduleDirector);
+}
+
+void updateHubBeforeSleep(Hub* hub)
+{
+	// TODO: Will we ever actually need a before hook?
+}
+
+void updateHubAfterSleep(Hub* hub)
+{
+  updateModuleDirectorAfterSleep(hub->moduleDirector);
+}
+
+void showAllHubModules(Hub* hub)
+{
+  openModulesWithDirector(hub->moduleDirector);
+  hub->allModulesAreOpen = 1;
+}
+
+void hideAllHubModules(Hub* hub)
+{
+  closeModulesWithDirector(hub->moduleDirector);
+  hub->allModulesAreOpen = 0;
+}
+
+void toggleAllHubModules(Hub* hub)
+{
+  if (hub->allModulesAreOpen) {
+    hideAllHubModules(hub);
+  } else {
+    showAllHubModules(hub);
   }
 }
 
-static void renderModules(Hub* hub)
+void alertHubModule(Hub* hub, ModuleType moduleType)
 {
-  cairo_t* cr = getCairoContext(hub->surface);
-  cairo_save(cr);
-  cairo_translate(cr, 0, hub->height - 1);
   for (size_t i = 0; i < hub->moduleCount; ++i) {
     Module* module = &hub->modules[i];
-    if (module->renderFunc == 0 || module->state == MS_OFF) {
-      continue;
-    }
-    cairo_save(cr);
-    cairo_translate(cr, hub->width - module->width, -module->height);
-    module->renderFunc(module, hub->surface);
-    cairo_restore(cr);
-    cairo_translate(cr, 0, -(module->height + hub->modulePadding));
-  }
-  cairo_restore(cr);
-}
-
-void renderHub(Hub* hub)
-{
-  Milliseconds frameDuration = getTimeInMilliseconds() - hub->lastRenderTime;
-  hub->lastRenderTime = getTimeInMilliseconds();
-
-  updateRenderFlag(hub, frameDuration);
-
-  // If we are rendering, we need to:
-  //  1) Update the hub size - we want our surface to be as small as possible,
-  //     so were not stealing more input focus than necessary.
-  //  2) Map the surface - we unmap it when we're not rendering (see note
-  //     below).
-  //  3) Clear the screen
-  //  4) Render the modules
-  //
-  // If we are not rendering, we will unmap the surface. This is to prevent
-  // stealing input events from windows beneath when we are completely hidden.
-  // It would be preferably to disable window events entirely for our surface,
-  // since they're unused, but I don't know how to do that.
-  if (hub->shouldRender) {
-    updateHubSize(hub);
-    mapSurface(hub->surface);
-
-    setDrawColor(hub->surface, 0, 0, 0, 0);
-    drawFullRect(hub->surface);
-
-    renderModules(hub);
-    flushSurface(hub->surface);
-
-  } else {
-    unmapSurface(hub->surface);
-  }
-}
-
-static void refreshHub(Hub* hub)
-{
-  if (!hub->shouldRender) {
-    hub->shouldRender = 1;
-    hub->lastRenderTime = getTimeInMilliseconds();
-  }
-}
-
-void showHub(Hub* hub)
-{
-  for (size_t i = 0; i < hub->moduleCount; ++i) {
-    setModuleState(&hub->modules[i], MS_ON_CONSTANT);
-  }
-  refreshHub(hub);
-}
-
-void hideHub(Hub* hub)
-{
-  for (size_t i = 0; i < hub->moduleCount; ++i) {
-    setModuleState(&hub->modules[i], MS_OFF);
-  }
-  refreshHub(hub);
-}
-
-void toggleHub(Hub* hub)
-{
-  int isOff = 0;
-  for (size_t i = 0; i < hub->moduleCount; ++i) {
-    if (hub->modules[i].state == MS_OFF) {
-      isOff = 1;
-      break;
-    }
-  }
-  if (isOff) {
-    showHub(hub);
-  } else {
-    hideHub(hub);
-  }
-  refreshHub(hub);
-}
-
-void showModuleUpdate(Hub* hub, ModuleType mt)
-{
-  for (size_t i = 0; i < hub->moduleCount; ++i) {
-    if (hub->modules[i].type == mt) {
-      if (hub->modules[i].state != MS_ON_CONSTANT) {
-        setModuleState(&hub->modules[i], MS_ON_DYNAMIC);
-        refreshHub(hub);
-      }
-      return;
+    if (module->type == moduleType) {
+      alertModuleWithDirector(hub->moduleDirector, module);
     }
   }
 }

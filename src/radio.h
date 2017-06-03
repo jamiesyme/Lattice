@@ -6,11 +6,11 @@
 // Messages are sent and received in the RadioMsg format. Below are all the
 // possible commands that can be sent by radio.
 typedef enum {
-  RMSG_HIDE_ALL,    // No data
-  RMSG_SHOW_ALL,    // No data
-  RMSG_SHOW_UPDATE, // data = single ModuleType
-  RMSG_STOP,        // No data
-  RMSG_TOGGLE_ALL   // No data
+  RMSG_HIDE_ALL,  // No data
+  RMSG_SHOW_ALL,  // No data
+  RMSG_ALERT,     // data = single ModuleType
+  RMSG_STOP,      // No data
+  RMSG_TOGGLE_ALL // No data
 } RadioMsgType;
 
 // When sending a radio message with any type that specifies no data, be sure to

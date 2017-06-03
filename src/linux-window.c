@@ -7,17 +7,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "surface.h"
+#include "linux-window.h"
 
 
-typedef struct Surface {
+typedef struct LinuxWindow {
   Display* xDisplay;
   Window xWindow;
-  cairo_surface_t* cSurface;
-  cairo_t* cContext;
-  unsigned int width;
-  unsigned int height;
-} Surface;
+  cairo_surface_t* cairoSurface;
+  cairo_t* cairoContext;
+} LinuxWindow;
 
 
 // Input coords x and y can be positive or negative. Positive coords are already
@@ -47,8 +45,10 @@ static void normalizePositionCoords(Display* xDisplay,
   }
 }
 
-// Sets the window type to "NOTIFICATION"
-static void setWindowType(Display* xDisplay, Window xWindow)
+// Sets the window type to "_NET_WM_WINDOW_TYPE_NOTIFICATION"
+// TODO: Why? Is this what makes the window float? Come on, Jamie, learn to
+// document stuff properly...
+static void setWindowTypeToNotification(Display* xDisplay, Window xWindow)
 {
   Atom property = XInternAtom(xDisplay, "_NET_WM_WINDOW_TYPE", 0);
   Atom value = XInternAtom(xDisplay, "_NET_WM_WINDOW_TYPE_NOTIFICATION", 0);
@@ -62,7 +62,7 @@ static void setWindowType(Display* xDisplay, Window xWindow)
                   1);
 }
 
-// Sets the window to be sticky and appear across all virtual desktops
+// Sets the window to be sticky, making it appear across all virtual desktops
 static void setWindowSticky(Display* xDisplay, Window xWindow)
 {
   Atom property = XInternAtom(xDisplay, "_NET_WM_STATE", 0);
@@ -91,7 +91,7 @@ static void disableWindowInput(Display* xDisplay, Window xWindow)
   XSetWMHints(xDisplay, xWindow, &xHints);
 }
 
-Surface* newSurface(int x, int y, unsigned int width, unsigned int height)
+LinuxWindow* newLinuxWindow(unsigned int width, unsigned int height)
 {
   int status;
   Display* xDisplay;
@@ -111,9 +111,6 @@ Surface* newSurface(int x, int y, unsigned int width, unsigned int height)
   xScreen = DefaultScreen(xDisplay);
   xRoot = RootWindow(xDisplay, xScreen);
 
-  // If the caller supplied negative position coords, convert them
-  normalizePositionCoords(xDisplay, x, y, &x, &y);
-
   // Find a visual info profile for our window that supports transparency
   status = XMatchVisualInfo(xDisplay,
                             xScreen,
@@ -126,7 +123,7 @@ Surface* newSurface(int x, int y, unsigned int width, unsigned int height)
   }
 
   // The window attributes have been developed based on the xlib docs and a lot
-  // of trail and error; I'm not completely sure how all of the values interact
+  // of trial and error; I'm not completely sure how all of the values interact
   // with each other, otherwise I'd document this a bit more.
   xAttributes.background_pixmap = None;
   xAttributes.border_pixel = 0;
@@ -145,7 +142,7 @@ Surface* newSurface(int x, int y, unsigned int width, unsigned int height)
   // Create the window
   xWindow = XCreateWindow(xDisplay,
                           xRoot,
-                          x, y,
+                          0, 0,
                           width, height,
                           0,
                           xVisualInfo.depth,
@@ -155,7 +152,7 @@ Surface* newSurface(int x, int y, unsigned int width, unsigned int height)
                           &xAttributes);
 
   // Set some extra window properties to get the behaviour we need out of X
-  setWindowType(xDisplay, xWindow);
+  setWindowTypeToNotification(xDisplay, xWindow);
   setWindowSticky(xDisplay, xWindow);
   disableWindowInput(xDisplay, xWindow);
 
@@ -167,77 +164,92 @@ Surface* newSurface(int x, int y, unsigned int width, unsigned int height)
   cairo_t* cr = cairo_create(cs);
 
   // Put together the surface
-  Surface* surface = malloc(sizeof(Surface));
-  surface->xDisplay = xDisplay;
-  surface->xWindow = xWindow;
-  surface->cSurface = cs;
-  surface->cContext = cr;
-  surface->width = width;
-  surface->height = height;
-  return surface;
+  LinuxWindow* window = malloc(sizeof(LinuxWindow));
+  window->xDisplay = xDisplay;
+  window->xWindow = xWindow;
+  window->cairoSurface = cs;
+  window->cairoContext = cr;
+  return window;
 }
 
-void freeSurface(Surface* surface)
+void freeLinuxWindow(LinuxWindow* window)
 {
-  cairo_destroy(surface->cContext);
-  cairo_surface_destroy(surface->cSurface);
-  XDestroyWindow(surface->xDisplay, surface->xWindow);
-  XCloseDisplay(surface->xDisplay);
-  free(surface);
+  cairo_destroy(window->cairoContext);
+  cairo_surface_destroy(window->cairoSurface);
+  XDestroyWindow(window->xDisplay, window->xWindow);
+  XCloseDisplay(window->xDisplay);
+  free(window);
 }
 
-void flushSurface(Surface* surface)
+void prepareLinuxWindowRender(LinuxWindow* window)
 {
-  cairo_surface_flush(surface->cSurface);
-  XFlush(surface->xDisplay);
+	cairo_push_group(window->cairoContext);
+
+	// Clear the screen
+  cairo_save(window->cairoContext);
+  cairo_set_source_rgba(window->cairoContext, 0.f, 0.f, 0.f, 0.f);
+  cairo_set_operator(window->cairoContext, CAIRO_OPERATOR_SOURCE);
+  cairo_paint(window->cairoContext);
+  cairo_restore(window->cairoContext);
 }
 
-void mapSurface(Surface* surface)
+void finishLinuxWindowRender(LinuxWindow* window)
 {
-  XMapWindow(surface->xDisplay, surface->xWindow);
-  XFlush(surface->xDisplay);
+	XEvent e;
+	
+	cairo_pop_group_to_source(window->cairoContext);
+  cairo_save(window->cairoContext);
+  cairo_set_operator(window->cairoContext, CAIRO_OPERATOR_SOURCE);
+	cairo_paint(window->cairoContext);
+  cairo_restore(window->cairoContext);
+	cairo_surface_flush(window->cairoSurface);
+
+	// Throw away the x events, we don't need them.
+	// Not sure if this is necessary, but I don't what happens when the queue gets
+	// full.
+	while (XPending(window->xDisplay)) {
+		XNextEvent(window->xDisplay, &e);
+	}
 }
 
-void unmapSurface(Surface* surface)
+void showLinuxWindow(LinuxWindow* window)
 {
-  XUnmapWindow(surface->xDisplay, surface->xWindow);
-  XFlush(surface->xDisplay);
+  XMapWindow(window->xDisplay, window->xWindow);
+  XFlush(window->xDisplay);
 }
 
-void setSurfacePosition(Surface* surface, int x, int y)
+void hideLinuxWindow(LinuxWindow* window)
+{
+  XUnmapWindow(window->xDisplay, window->xWindow);
+  XFlush(window->xDisplay);
+}
+
+void setLinuxWindowPosition(LinuxWindow* window, int x, int y)
 {
   XWindowChanges changes;
-  normalizePositionCoords(surface->xDisplay, x, y, &changes.x, &changes.y);
-  XConfigureWindow(surface->xDisplay,
-                   surface->xWindow,
+  normalizePositionCoords(window->xDisplay, x, y, &changes.x, &changes.y);
+  XConfigureWindow(window->xDisplay,
+                   window->xWindow,
                    CWX | CWY,
                    &changes);
 }
 
-void setSurfaceSize(Surface* surface, unsigned int width, unsigned int height)
+void setLinuxWindowSize(LinuxWindow* window,
+                        unsigned int width,
+                        unsigned int height)
 {
   XWindowChanges changes;
   changes.width = width;
   changes.height = height;
-  XConfigureWindow(surface->xDisplay,
-                   surface->xWindow,
+  XConfigureWindow(window->xDisplay,
+                   window->xWindow,
                    CWWidth | CWHeight,
                    &changes);
 
-  cairo_xlib_surface_set_size(surface->cSurface, width, height);
+  cairo_xlib_surface_set_size(window->cairoSurface, width, height);
 }
 
-unsigned int getSurfaceWidth(Surface* surface)
+cairo_t* getCairoContextFromLinuxWindow(LinuxWindow* window)
 {
-  return surface->width;
-}
-
-unsigned int getSurfaceHeight(Surface* surface)
-{
-  return surface->height;
-}
-
-cairo_t* getCairoContext(Surface* surface)
-{
-  return surface->cContext;
+  return window->cairoContext;
 }

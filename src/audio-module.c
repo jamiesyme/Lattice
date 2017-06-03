@@ -6,9 +6,14 @@
 #include "command-utils.h"
 #include "draw-utils.h"
 #include "module.h"
-#include "surface.h"
 
 #define BUF_SIZE 16
+#define BAR_LENGTH 160.0f
+#define BAR_THICKNESS 4.0f
+#define DRAW_WIDTH 175.0f
+#define DRAW_HEIGHT 50.0f
+#define FONT_NAME "monaco"
+#define FONT_SIZE 32
 
 
 typedef enum SinkType {
@@ -35,17 +40,17 @@ static SinkType strToSinkType(const char* str)
   }
 }
 
-void renderAudioModule(Module* module, Surface* surface);
+void renderAudioModule(Module* module, cairo_t* cairoContext);
 
 void initAudioModule(Module* module)
 {
   module->type = MT_AUDIO;
-  module->width = 250;
-  module->height = 100;
   module->renderFunc = renderAudioModule;
+
+  setModuleDrawSize(module, (Dimensions){DRAW_WIDTH, DRAW_HEIGHT});
 }
 
-void renderAudioModule(Module* module, Surface* surface)
+void renderAudioModule(Module* module, cairo_t* cairoContext)
 {
   // Get the current sink settings from maudio
   int statusSink, statusVolume, statusMute;
@@ -70,17 +75,6 @@ void renderAudioModule(Module* module, Surface* surface)
   sink.volume = strtol(bufVolume, NULL, 10);
   sink.muted = strtol(bufMute, NULL, 10);
 
-  // Draw the border and background rects
-  float opacity = getModuleOpacity(module);
-  int border = 4;
-  setDrawColor(surface, 0, 0, 0, opacity);
-  drawRect(surface, 0, 0, module->width, module->height);
-  setDrawColor(surface, 1.0, 1.0, 1.0, opacity);
-  drawRect(surface,
-           border, border,
-           module->width - border * 2,
-           module->height - border * 2);
-
   // Draw the sink type
   char* text;
   if (sink.type == ST_HEADPHONES) {
@@ -90,22 +84,23 @@ void renderAudioModule(Module* module, Surface* surface)
   } else {
     text = "Unknown";
   }
-  TextSurface* textSurface = renderText(surface, 32, "monaco", text);
-  setDrawColor(surface, 0, 0, 0, opacity);
-  drawText(surface, textSurface, module->width / 2, module->height / 2 - 10, 1);
+  TextSurface* textSurface = renderText(cairoContext,
+                                        FONT_SIZE,
+                                        FONT_NAME,
+                                        text);
+  setDrawColor4(cairoContext, 0, 0, 0, 1);
+  drawText(cairoContext, textSurface, DRAW_WIDTH / 2, DRAW_HEIGHT / 2 - 10, 1);
   freeTextSurface(textSurface);
 
   // Draw the volume indicator
-  int fullLength = 160;
-  int curLength = fullLength * sink.volume / 100;
-  int thickness = 4;
-  int x = module->width / 2 - fullLength / 2;
-  int y = module->height / 3 * 2 + 5;
+  int curLength = BAR_LENGTH * sink.volume / 100;
+  int x = DRAW_WIDTH / 2 - BAR_LENGTH / 2;
+  int y = DRAW_HEIGHT / 3 * 2 + 10;
   if (sink.muted) {
-    setDrawColor(surface, 0.8, 0.2, 0.2, opacity);
+    setDrawColor4(cairoContext, 0.8f, 0.2f, 0.2f, 1.0f);
   } else {
-    setDrawColor(surface, 0.1, 0.1, 0.1, opacity);
+    setDrawColor4(cairoContext, 0.1f, 0.1f, 0.1f, 1.0f);
   }
-  drawRect(surface, x, y, fullLength, thickness / 2);
-  drawRect(surface, x, y, curLength, thickness);
+  drawRect4(cairoContext, x, y, BAR_LENGTH, BAR_THICKNESS / 2);
+  drawRect4(cairoContext, x, y, curLength, BAR_THICKNESS);
 }

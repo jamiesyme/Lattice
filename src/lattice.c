@@ -1,14 +1,26 @@
+#include <math.h>
 #include <stdio.h>
 
-#include "frame-limiter.h"
+#include "app-config.h"
+#include "geometry-utils.h"
+#include "fps-limiter.h"
 #include "hub.h"
+#include "linux-window.h"
 #include "module-type.h"
 #include "radio.h"
 
+#define MIN(x, y) ((x) < (y) ? (x) : (y))
+#define MAX(x, y) ((x) > (y) ? (x) : (y))
+
 
 typedef struct App {
-  // Used to cap the framerate at 60 fps
-  FrameLimiter* frameLimiter;
+  AppConfig config;
+
+	// Manages the Xlib connection and cairo context
+	LinuxWindow* window;
+	
+  // Used to cap the frame rate at 60 fps
+  FpsLimiter* fpsLimiter;
 
   // Manages and renders all of the modules
   Hub* hub;
@@ -20,16 +32,40 @@ typedef struct App {
   int shouldQuit;
 } App;
 
-static void processMsg(App* app, RadioMsg msg);
 
+static void processMsg(App* app, RadioMsg msg);
 
 int main()
 {
   App app;
   RadioMsg msg;
+  Rect hubScreenRect;
 
-  app.frameLimiter = newFrameLimiter(60);
-  app.hub = newHub();
+  // TODO: Load config from disk
+  app.config.moduleAlertDuration = 1500;
+  app.config.moduleCloseDelay = 100;
+  app.config.moduleCloseMoveDuration = 200;
+  app.config.moduleCloseMoveMethod = IM_LINEAR;
+  app.config.moduleBackgroundColor = (Color){1.0f, 1.0f, 1.0f, 1.0f};
+  app.config.moduleBorderColor = (Color){0.0f, 0.0f, 0.0f, 1.0f};
+  app.config.moduleBorderSize = 2.0f;
+  app.config.moduleLowerMoveDuration = 200;
+  app.config.moduleLowerMoveMethod = IM_LINEAR;
+  app.config.moduleMarginSize = 25;
+  app.config.moduleMoveDuration = 200;
+  app.config.moduleMoveMethod = IM_LINEAR;
+  app.config.moduleOpenDelay = 100;
+  app.config.moduleOpenMoveDuration = 200;
+  app.config.moduleOpenMoveMethod = IM_LINEAR;
+  app.config.modulePaddingSize = (Dimensions){75.0f, 25.0f};
+  app.config.moduleRaiseMoveDuration = 200;
+  app.config.moduleRaiseMoveMethod = IM_LINEAR;
+  app.config.windowOffset = (Point){0.0f, 25.0f};
+
+  // Initialize the app
+  app.window = newLinuxWindow(1, 1);
+  app.fpsLimiter = newFpsLimiter(60);
+  app.hub = newHub(&app.config);
   app.radio = newRadioReceiver();
   app.shouldQuit = 0;
 
@@ -42,48 +78,73 @@ int main()
   // We'll keep running until a RMSG_STOP message is received
   while (!app.shouldQuit) {
 
-    // We ask the hub if it needs to do any rendering. If it does, we'll render
-    // it, and then check for any new messages from the radio.
-    if (shouldRenderHub(app.hub)) {
-      renderHub(app.hub);
+	  // Draw the hub
+	  if (shouldRenderHub(app.hub)) {
 
-      // Check for messages in a non-blocking way
+		  // Resize the window
+		  hubScreenRect = getHubScreenRect(app.hub);
+		  setLinuxWindowPosition(app.window,
+                             (int)floor(hubScreenRect.x),
+                             (int)floor(hubScreenRect.y));
+		  setLinuxWindowSize(app.window,
+                         MAX(1, (unsigned int)hubScreenRect.width),
+                         MAX(1, (unsigned int)hubScreenRect.height));
+
+		  // Render to the window
+		  prepareLinuxWindowRender(app.window);
+		  renderHub(app.hub, getCairoContextFromLinuxWindow(app.window));
+		  finishLinuxWindowRender(app.window);
+	  }
+
+	  // Check for radio messages
+	  if (shouldRenderHub(app.hub)) {
+
+		  // The hub needs to keep rendering, so check for messages in a
+		  // non-blocking way.
       if (pollForRadioMsg(app.radio, &msg)) {
         processMsg(&app, msg);
         freeRadioMsg(&msg);
       }
-    } else {
-      // Since the hub doesn't need to do any rendering (all the modules are
-      // MS_OFF), we can check for messages in a blocking way. This will allow
-      // our application to sleep until the user sends another request.
+	  } else {
+
+		  // The hub is finished rendering, so there is nothing to do until we get
+		  // another radio message.
+		  updateHubBeforeSleep(app.hub);
+		  hideLinuxWindow(app.window);
+
       waitForRadioMsg(app.radio, &msg);
+
+      showLinuxWindow(app.window);
+      updateHubAfterSleep(app.hub);
+
       processMsg(&app, msg);
       freeRadioMsg(&msg);
-    }
+	  }
 
-    // This will limit our framerate to a maximum of 60 fps
-    applyFrameLimiter(app.frameLimiter);
+    // This will limit our frame rate to a maximum of 60 fps
+    limitFps(app.fpsLimiter);
   }
 
   freeRadioReceiver(app.radio);
   freeHub(app.hub);
-  freeFrameLimiter(app.frameLimiter);
+  freeFpsLimiter(app.fpsLimiter);
+  freeLinuxWindow(app.window);
   return 0;
 }
 
 static void processMsg(App* app, RadioMsg msg)
 {
   switch (msg.type) {
+  case RMSG_ALERT:
+    alertHubModule(app->hub, *(ModuleType*)msg.data);
+    break;
+
   case RMSG_HIDE_ALL:
-    hideHub(app->hub);
+    hideAllHubModules(app->hub);
     break;
 
   case RMSG_SHOW_ALL:
-    showHub(app->hub);
-    break;
-
-  case RMSG_SHOW_UPDATE:
-    showModuleUpdate(app->hub, *(ModuleType*)msg.data);
+    showAllHubModules(app->hub);
     break;
 
   case RMSG_STOP:
@@ -91,7 +152,7 @@ static void processMsg(App* app, RadioMsg msg)
     break;
 
   case RMSG_TOGGLE_ALL:
-    toggleHub(app->hub);
+    toggleAllHubModules(app->hub);
     break;
 
   default:
