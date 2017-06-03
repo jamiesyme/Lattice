@@ -5,7 +5,6 @@
 #include "geometry-utils.h"
 #include "module.h"
 #include "module-renderer.h"
-#include "surface.h"
 
 #define MIN(x, y) ((x) < (y) ? (x) : (y))
 #define MAX(x, y) ((x) > (y) ? (x) : (y))
@@ -19,11 +18,41 @@ typedef struct ModuleRenderer {
   Module** modules;
   Module** sortedModules;
   size_t moduleCount;
-
 } ModuleRenderer;
 
-static void updateSortedModules(ModuleRenderer* renderer);
 
+// TODO: description.
+static void updateSortedModules(ModuleRenderer* renderer)
+{
+  for (size_t i = 0; i < renderer->moduleCount; ++i) {
+    Module* unsortedModule = renderer->modules[i];
+
+    // Try to insert this module somewhere in the sorted list
+    for (size_t j = 0; j < i; ++j) {
+
+      // Check if the depth is lower than the current module
+      if (unsortedModule->depth <
+          renderer->sortedModules[j]->depth) {
+
+        // We need to insert this module at `j`, so we need to shuffle all of
+        // the modules after `j` one to the right
+        for (size_t k = i; k > j; --k) {
+          renderer->sortedModules[k] = renderer->sortedModules[k - 1];
+        }
+
+        // Insert the module
+        renderer->sortedModules[j] = unsortedModule;
+        unsortedModule = NULL;
+        break;
+      }
+    }
+
+    // If the module wasn't inserted, push it at the end
+    if (unsortedModule != NULL) {
+      renderer->sortedModules[i] = unsortedModule;
+    }
+  }
+}
 
 ModuleRenderer* newModuleRenderer(AppConfig* appConfig)
 {
@@ -53,14 +82,13 @@ void addModuleToRenderer(ModuleRenderer* renderer, Module* module)
   renderer->sortedModules[renderer->moduleCount - 1] = NULL;
 }
 
-void renderModules(ModuleRenderer* renderer, Surface* surface)
+void renderModules(ModuleRenderer* renderer, cairo_t* cairoContext)
 {
   // When rendering, we need to sort the modules by depth, so modules with a
   // higher depth are renderered later.
   updateSortedModules(renderer);
 
   // Render all the modules
-  cairo_t* cr = getCairoContext(surface);
   for (size_t i = 0; i < renderer->moduleCount; ++i) {
     Module* module = renderer->sortedModules[i];
 
@@ -76,15 +104,15 @@ void renderModules(ModuleRenderer* renderer, Surface* surface)
     }
 
     // Position the draw origin with the modules position
-    cairo_save(cr);
-    cairo_translate(cr, moduleRect.x, moduleRect.y);
+    cairo_save(cairoContext);
+    cairo_translate(cairoContext, moduleRect.x, moduleRect.y);
 
     // Draw the module border
     int borderSize = (int)renderer->appConfig->moduleBorderSize;
     Color borderColor = renderer->appConfig->moduleBorderColor;
-    setDrawColor(surface, borderColor);
-    drawRect4(surface, 0, 0, moduleRect.width, moduleRect.height);
-    cairo_translate(cr, borderSize, borderSize);
+    setDrawColor(cairoContext, borderColor);
+    drawRect4(cairoContext, 0, 0, moduleRect.width, moduleRect.height);
+    cairo_translate(cairoContext, borderSize, borderSize);
 
     // Draw the module background
     int paddingWidth = (int)renderer->appConfig->modulePaddingSize.width;
@@ -92,13 +120,13 @@ void renderModules(ModuleRenderer* renderer, Surface* surface)
     int backgroundWidth = (int)moduleRect.width - borderSize * 2;
     int backgroundHeight = (int)moduleRect.height - borderSize * 2;
     Color backgroundColor = renderer->appConfig->moduleBackgroundColor;
-    setDrawColor(surface, backgroundColor);
-    drawRect4(surface, 0, 0, backgroundWidth, backgroundHeight);
-    cairo_translate(cr, paddingWidth, paddingHeight);
+    setDrawColor(cairoContext, backgroundColor);
+    drawRect4(cairoContext, 0, 0, backgroundWidth, backgroundHeight);
+    cairo_translate(cairoContext, paddingWidth, paddingHeight);
 
     // Draw the module
-    module->renderFunc(module, surface);
-    cairo_restore(cr);
+    module->renderFunc(module, cairoContext);
+    cairo_restore(cairoContext);
   }
 }
 
@@ -131,36 +159,4 @@ Rect getModuleRendererRect(ModuleRenderer* renderer)
   }
 
   return (Rect){minX, minY, maxX - minX, maxY - minY};
-}
-
-void updateSortedModules(ModuleRenderer* renderer)
-{
-  for (size_t i = 0; i < renderer->moduleCount; ++i) {
-    Module* unsortedModule = renderer->modules[i];
-
-    // Try to insert this module somewhere in the sorted list
-    for (size_t j = 0; j < i; ++j) {
-
-      // Check if the depth is lower than the current module
-      if (unsortedModule->depth <
-          renderer->sortedModules[j]->depth) {
-
-        // We need to insert this module at `j`, so we need to shuffle all of
-        // the modules after `j` one to the right
-        for (size_t k = i; k > j; --k) {
-          renderer->sortedModules[k] = renderer->sortedModules[k - 1];
-        }
-
-        // Insert the module
-        renderer->sortedModules[j] = unsortedModule;
-        unsortedModule = NULL;
-        break;
-      }
-    }
-
-    // If the module wasn't inserted, push it at the end
-    if (unsortedModule != NULL) {
-      renderer->sortedModules[i] = unsortedModule;
-    }
-  }
 }

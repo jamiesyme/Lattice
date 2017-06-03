@@ -2,7 +2,6 @@
 
 #include "draw-utils.h"
 #include "module.h"
-#include "surface.h"
 #include "time-module.h"
 
 #define DRAW_WIDTH 95
@@ -11,7 +10,7 @@
 #define FONT_SIZE 32
 
 
-void renderTimeModule(Module* module, Surface* surface);
+void renderTimeModule(Module* module, cairo_t* cairoContext);
 
 void initTimeModule(Module* module)
 {
@@ -21,7 +20,7 @@ void initTimeModule(Module* module)
   setModuleDrawSize(module, (Dimensions){DRAW_WIDTH, DRAW_HEIGHT});
 }
 
-void renderTimeModule(Module* module, Surface* surface)
+void renderTimeModule(Module* module, cairo_t* cairoContext)
 {
   // Get the current time
   time_t t;
@@ -34,9 +33,9 @@ void renderTimeModule(Module* module, Surface* surface)
   strftime(strTime, sizeof strTime, "%-I:%M", tm);
 
   // Render the time string
-  setDrawColor(surface, (Color){0.0f, 0.0f, 0.0f, 1.0f});
-  TextSurface* textSurface = renderText(surface, FONT_SIZE, FONT_NAME, strTime);
+  setDrawColor(cairoContext, (Color){0.0f, 0.0f, 0.0f, 1.0f});
+  TextSurface* textSurface = renderText(cairoContext, FONT_SIZE, FONT_NAME, strTime);
   Dimensions textSize = getTextDimensions(textSurface);
-  drawText(surface, textSurface, textSize.width / 2, textSize.height / 2, 1);
+  drawText(cairoContext, textSurface, textSize.width / 2, textSize.height / 2, 1);
   freeTextSurface(textSurface);
 }

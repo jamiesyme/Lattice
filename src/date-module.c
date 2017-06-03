@@ -3,7 +3,6 @@
 #include "date-module.h"
 #include "draw-utils.h"
 #include "module.h"
-#include "surface.h"
 
 #define DAYS_WIDTH 150
 #define DRAW_WIDTH 150
@@ -29,7 +28,7 @@ typedef enum Weekday {
 char* weekdayStrings[] = {"S", "M", "T", "W", "T", "F", "S"};
 
 
-void renderDateModule(Module* module, Surface* surface);
+void renderDateModule(Module* module, cairo_t* cairoContext);
 
 void initDateModule(Module* module)
 {
@@ -39,7 +38,7 @@ void initDateModule(Module* module)
   setModuleDrawSize(module, (Dimensions){DRAW_WIDTH, DRAW_HEIGHT});
 }
 
-void renderDateModule(Module* module, Surface* surface)
+void renderDateModule(Module* module, cairo_t* cairoContext)
 {
   // Get the current time
   time_t t;
@@ -51,12 +50,12 @@ void renderDateModule(Module* module, Surface* surface)
   strftime(strTime, sizeof strTime, "%b %-d", tm);
 
   // Draw the date
-  setDrawColor4(surface, 0, 0, 0, 1);
-  TextSurface* textSurface = renderText(surface,
+  setDrawColor4(cairoContext, 0, 0, 0, 1);
+  TextSurface* textSurface = renderText(cairoContext,
                                         PRIMARY_FONT_SIZE,
                                         PRIMARY_FONT_NAME,
                                         strTime);
-  drawText(surface, textSurface, DRAW_WIDTH / 2, DRAW_HEIGHT / 3 - 5, 1);
+  drawText(cairoContext, textSurface, DRAW_WIDTH / 2, DRAW_HEIGHT / 3 - 5, 1);
   freeTextSurface(textSurface);
 
   // Draw the days of the week
@@ -65,16 +64,16 @@ void renderDateModule(Module* module, Surface* surface)
     int x = DRAW_WIDTH / 2 - DAYS_WIDTH / 2 + dayDiff * d + dayDiff / 2;
     int y = DRAW_HEIGHT / 4 * 3 + 5;
     if (d == tm->tm_wday) {
-      setDrawColor4(surface, 0, 0, 0, 1);
-      drawRect4(surface, x - 7, y + 10, 14, 1);
+      setDrawColor4(cairoContext, 0, 0, 0, 1);
+      drawRect4(cairoContext, x - 7, y + 10, 14, 1);
     } else {
-      setDrawColor4(surface, 0.6f, 0.6f, 0.6f, 1.0f);
+      setDrawColor4(cairoContext, 0.6f, 0.6f, 0.6f, 1.0f);
     }
-    textSurface = renderText(surface,
+    textSurface = renderText(cairoContext,
                              SECONDARY_FONT_SIZE,
                              SECONDARY_FONT_NAME,
                              weekdayStrings[d]);
-    drawText(surface, textSurface, x, y, 1);
+    drawText(cairoContext, textSurface, x, y, 1);
     freeTextSurface(textSurface);
   }
 }

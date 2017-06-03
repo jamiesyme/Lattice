@@ -1,15 +1,24 @@
+#include <math.h>
 #include <stdio.h>
 
 #include "app-config.h"
+#include "geometry-utils.h"
 #include "fps-limiter.h"
 #include "hub.h"
+#include "linux-window.h"
 #include "module-type.h"
 #include "radio.h"
+
+#define MIN(x, y) ((x) < (y) ? (x) : (y))
+#define MAX(x, y) ((x) > (y) ? (x) : (y))
 
 
 typedef struct App {
   AppConfig config;
 
+	// Manages the Xlib connection and cairo context
+	LinuxWindow* window;
+	
   // Used to cap the frame rate at 60 fps
   FpsLimiter* fpsLimiter;
 
@@ -23,13 +32,14 @@ typedef struct App {
   int shouldQuit;
 } App;
 
-static void processMsg(App* app, RadioMsg msg);
 
+static void processMsg(App* app, RadioMsg msg);
 
 int main()
 {
   App app;
   RadioMsg msg;
+  Rect hubScreenRect;
 
   // TODO: Load config from disk
   app.config.moduleAlertDuration = 1500;
@@ -53,6 +63,7 @@ int main()
   app.config.windowOffset = (Point){0.0f, 25.0f};
 
   // Initialize the app
+  app.window = newLinuxWindow(1, 1);
   app.fpsLimiter = newFpsLimiter(60);
   app.hub = newHub(&app.config);
   app.radio = newRadioReceiver();
@@ -67,29 +78,48 @@ int main()
   // We'll keep running until a RMSG_STOP message is received
   while (!app.shouldQuit) {
 
-    // We ask the hub if it needs to do any rendering. If it does, we'll render
-    // it, and then check for any new messages from the radio.
-    if (shouldRenderHub(app.hub)) {
-      renderHub(app.hub);
+	  // Draw the hub
+	  if (shouldRenderHub(app.hub)) {
 
-      // Check for messages in a non-blocking way
+		  // Resize the window
+		  hubScreenRect = getHubScreenRect(app.hub);
+		  setLinuxWindowPosition(app.window,
+                             (int)floor(hubScreenRect.x),
+                             (int)floor(hubScreenRect.y));
+		  setLinuxWindowSize(app.window,
+                         MAX(1, (unsigned int)hubScreenRect.width),
+                         MAX(1, (unsigned int)hubScreenRect.height));
+
+		  // Render to the window
+		  prepareLinuxWindowRender(app.window);
+		  renderHub(app.hub, getCairoContextFromLinuxWindow(app.window));
+		  finishLinuxWindowRender(app.window);
+	  }
+
+	  // Check for radio messages
+	  if (shouldRenderHub(app.hub)) {
+
+		  // The hub needs to keep rendering, so check for messages in a
+		  // non-blocking way.
       if (pollForRadioMsg(app.radio, &msg)) {
         processMsg(&app, msg);
         freeRadioMsg(&msg);
       }
-    } else {
-      // Since the hub doesn't need to do any rendering (all the modules are
-      // MS_OFF), we can check for messages in a blocking way. This will allow
-      // our application to sleep until the user sends another request.
+	  } else {
+
+		  // The hub is finished rendering, so there is nothing to do until we get
+		  // another radio message.
+		  updateHubBeforeSleep(app.hub);
+		  hideLinuxWindow(app.window);
+
       waitForRadioMsg(app.radio, &msg);
 
-      // After sleeping, we have to let the hub know
+      showLinuxWindow(app.window);
       updateHubAfterSleep(app.hub);
 
-      // Then we can process the message as normal
       processMsg(&app, msg);
       freeRadioMsg(&msg);
-    }
+	  }
 
     // This will limit our frame rate to a maximum of 60 fps
     limitFps(app.fpsLimiter);
@@ -98,6 +128,7 @@ int main()
   freeRadioReceiver(app.radio);
   freeHub(app.hub);
   freeFpsLimiter(app.fpsLimiter);
+  freeLinuxWindow(app.window);
   return 0;
 }
 

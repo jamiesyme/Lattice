@@ -1,15 +1,12 @@
 #include <cairo/cairo.h>
-#include <math.h>
-#include <stdio.h>
 #include <stdlib.h>
+#include <stdio.h>
 
-#include "draw-utils.h"
 #include "geometry-utils.h"
 #include "hub.h"
 #include "module.h"
 #include "module-director.h"
 #include "module-renderer.h"
-#include "surface.h"
 
 #include "audio-module.h"
 #include "date-module.h"
@@ -18,7 +15,6 @@
 
 #define ABS(x) ((x) < 0 ? -(x) : (x))
 #define MIN(x, y) ((x) < (y) ? (x) : (y))
-#define MAX(x, y) ((x) > (y) ? (x) : (y))
 
 
 typedef struct Hub {
@@ -26,39 +22,25 @@ typedef struct Hub {
 
   Module* modules;
   size_t moduleCount;
-  ModuleDirector* moduleDirector;
-  ModuleRenderer* moduleRenderer;
   int allModulesAreOpen;
 
-  // A surface is a wrapper around a window; it's what we draw to.
-  Surface* surface;
-
-  // Explicitly setting this flag is an effective way to clear the screen,
-  // regardless of what the module director and renderer are up to.
-  int forceRender;
-
+  ModuleDirector* moduleDirector;
+  ModuleRenderer* moduleRenderer;
 } Hub;
 
-// TODO: description.
-static Module* addModuleToHub(Hub* hub);
 
-// TODO: description.
-static void updateSurfaceRect(Hub* hub, Rect rect);
-
+static Module* addModuleToHub(Hub* hub)
+{
+	hub->moduleCount++;
+  hub->modules = realloc(hub->modules, sizeof(Module) * hub->moduleCount);
+  initModule(&hub->modules[hub->moduleCount - 1], hub->appConfig);
+  return &hub->modules[hub->moduleCount - 1];
+}
 
 Hub* newHub(AppConfig* appConfig)
 {
   Hub* hub = malloc(sizeof(Hub));
   hub->appConfig = appConfig;
-
-  // Init surface.
-  // The surface will be resized/repositioned each frame to maintain the optimal
-  // size. The "optimal" size is one that obstructs other windows the least,
-  // otherwise we steal the mouse cursor from them. For now, we will just create
-  // the window as small as possible, which is 1x1.
-  // See renderHub() for more info.
-  hub->surface = newSurface(0, 0, 1, 1);
-  hub->forceRender = 1;
 
   // Init modules
   hub->allModulesAreOpen = 0;
@@ -95,85 +77,73 @@ void freeHub(Hub* hub)
     }
   }
   free(hub->modules);
-  freeSurface(hub->surface);
   free(hub);
 }
 
 int shouldRenderHub(Hub* hub)
 {
-  // If a forced render was requested, then we render
-  if (hub->forceRender) {
-    return 1;
-  }
-
   // The module renderer will be busy if any module is on-screen.
   // The module director will be busy if anything is moving.
   // In both cases, either something needs to be rendered or moved (which also
   // happens during renderHub()).
-  return isModuleRendererBusy(hub->moduleRenderer) ||
-         isModuleDirectorBusy(hub->moduleDirector);
+  return (isModuleRendererBusy(hub->moduleRenderer) ||
+          isModuleDirectorBusy(hub->moduleDirector));
 }
 
-void renderHub(Hub* hub)
+Rect getHubScreenRect(Hub* hub)
 {
-  // This render satisfies any forced render request
-  hub->forceRender = 0;
+  // Get the rect of the modules if they were all opened. This is the largest
+  // screen that we need to support.
+  Rect directorRect = getModuleDirectorOpenRect(hub->moduleDirector);
 
-  // Allow the director to move the modules
-  updateModuleDirector(hub->moduleDirector);
+  // The open rect is potentially partially off-screen. The screen rect should be
+  // clamped to the screen.
+  Rect screenRect = directorRect;
+  if (screenRect.x > 0.0f) {
+    screenRect.x = 0.0f;
+  }
+  if (screenRect.y > 0.0f) {
+    screenRect.y = 0.0f;
+  }
+  if (screenRect.x + screenRect.width > 0.0f) {
+    screenRect.width = -screenRect.x;
+  }
+  if (screenRect.y + screenRect.height > 0.0f) {
+    screenRect.height = -screenRect.y;
+  }
 
-  // If we are rendering, we need to:
-  //  1) Update the surface size - we want our surface to be as small as
-  //     possible, so were not stealing more input focus than necessary.
-  //  2) Map the surface - we unmap it when we're not rendering (see note
-  //     below).
-  //  3) Clear the screen
-  //  4) Render the modules
-  //  5) Flush the surface to display what we just rendered
-  //
-  // If we are not rendering, we will unmap the surface. This is to prevent
-  // stealing input events from windows beneath when we are completely hidden.
-  // It would be preferably to disable window events entirely for our surface,
-  // since they're unused, but I don't know how to do that.
+  return screenRect;
+}
+
+void renderHub(Hub* hub, cairo_t* cairoContext)
+{
+	Rect screenRect;
+	
+  // Let the module renderer do it's thing
   if (isModuleRendererBusy(hub->moduleRenderer)) {
 
-    // Get the the extents of all the modules. Note that the position is the a
-    // negative offset from the edge of the screen, and also note that the
-    // returned rect may be positioned partially or entirely off-screen.
-    Rect rendererRect = getModuleRendererRect(hub->moduleRenderer);
-
-    // Convert the renderer rect to a surface rect.
-    // If rendererRect is off-screen, this should clamp the rect to
-    // {0, 0, 0, 0}.
-    // Otherwise, this should clip the rect to the on-screen portion.
-    Rect surfaceRect;
-    surfaceRect.x = MIN(0, rendererRect.x);
-    surfaceRect.y = MIN(0, rendererRect.y);
-    //surfaceRect.width = rendererRect.width;
-    //surfaceRect.height = rendererRect.height;
-    // These assignments will clamp the window size to the edge of the window,
-    // but they also cause a lot of lag
-    surfaceRect.width = MIN(ABS(surfaceRect.x), rendererRect.width);
-    surfaceRect.height = MIN(ABS(surfaceRect.y), rendererRect.height);
-
-    updateSurfaceRect(hub, surfaceRect);
-    mapSurface(hub->surface);
-
-    Color clearColor = {0.0f, 0.0f, 0.0f, 0.0f};
-    setDrawColor(hub->surface, clearColor);
-    drawFullRect(hub->surface);
-
-    cairo_t* cr = getCairoContext(hub->surface);
-    cairo_save(cr);
-    cairo_translate(cr, -surfaceRect.x, -surfaceRect.y);
-    renderModules(hub->moduleRenderer, hub->surface);
-    cairo_restore(cr);
-
-    flushSurface(hub->surface);
-
-  } else {
-    unmapSurface(hub->surface);
+	  // Since the window resizes and moves as modules move, we need to correct
+	  // that with a translation.
+	  screenRect = getHubScreenRect(hub);
+    cairo_save(cairoContext);
+    cairo_translate(cairoContext, -screenRect.x, -screenRect.y);
+    renderModules(hub->moduleRenderer, cairoContext);
+    cairo_restore(cairoContext);
   }
+
+  // Allow the director to move the modules. This happens after the rendering so
+  // that the window can be resized before the next frame.
+  updateModuleDirector(hub->moduleDirector);
+}
+
+void updateHubBeforeSleep(Hub* hub)
+{
+	// TODO: Will we ever actually need a before hook?
+}
+
+void updateHubAfterSleep(Hub* hub)
+{
+  updateModuleDirectorAfterSleep(hub->moduleDirector);
 }
 
 void showAllHubModules(Hub* hub)
@@ -205,29 +175,4 @@ void alertHubModule(Hub* hub, ModuleType moduleType)
       alertModuleWithDirector(hub->moduleDirector, module);
     }
   }
-}
-
-void updateHubAfterSleep(Hub* hub)
-{
-  updateModuleDirectorAfterSleep(hub->moduleDirector);
-}
-
-Module* addModuleToHub(Hub* hub)
-{
-  // Allocate
-  hub->modules = realloc(hub->modules, sizeof(Module) * ++hub->moduleCount);
-
-  // Init
-  initModule(&hub->modules[hub->moduleCount - 1], hub->appConfig);
-
-  // Return
-  return &hub->modules[hub->moduleCount - 1];
-}
-
-void updateSurfaceRect(Hub* hub, Rect rect)
-{
-  setSurfaceSize(hub->surface,
-                 MAX(1, (unsigned int)rect.width),
-                 MAX(1, (unsigned int)rect.height));
-  setSurfacePosition(hub->surface, (int)floor(rect.x), (int)floor(rect.y));
 }

@@ -10,13 +10,16 @@
 // lattice.c and lattice-msg.c) only require the module type information.
 #include "module-type.h"
 
+// See linux-window.h for warning about this forward declaration.
+typedef struct _cairo cairo_t;
+
 typedef struct AppConfig AppConfig;
-typedef struct Surface Surface;
+
 typedef struct Module Module;
 
 
 // TODO: description.
-typedef void (*ModuleRenderFunc)(Module*, Surface*);
+typedef void (*ModuleRenderFunc)(Module*, cairo_t*);
 
 // TODO: description.
 typedef void (*ModuleFreeFunc)(Module*);
@@ -25,7 +28,7 @@ struct Module {
   AppConfig* appConfig;
 
   // Read-only after init.
-  // Used to identify module when running `lattice-msg show-update ...`
+  // Used to identify module when running `lattice-msg alert ...`
   // Default: MT_UNKNOWN
   ModuleType type;
 
@@ -35,8 +38,7 @@ struct Module {
   // TODO: description.
   float depth;
 
-  // Called once per frame to render the module if state is not MS_OFF.
-  // Function should respect opacityObj.
+  // Called once per frame to render the module.
   // Default: NULL
   ModuleRenderFunc renderFunc;
 

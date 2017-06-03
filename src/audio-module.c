@@ -6,7 +6,6 @@
 #include "command-utils.h"
 #include "draw-utils.h"
 #include "module.h"
-#include "surface.h"
 
 #define BUF_SIZE 16
 #define BAR_LENGTH 160.0f
@@ -41,7 +40,7 @@ static SinkType strToSinkType(const char* str)
   }
 }
 
-void renderAudioModule(Module* module, Surface* surface);
+void renderAudioModule(Module* module, cairo_t* cairoContext);
 
 void initAudioModule(Module* module)
 {
@@ -51,7 +50,7 @@ void initAudioModule(Module* module)
   setModuleDrawSize(module, (Dimensions){DRAW_WIDTH, DRAW_HEIGHT});
 }
 
-void renderAudioModule(Module* module, Surface* surface)
+void renderAudioModule(Module* module, cairo_t* cairoContext)
 {
   // Get the current sink settings from maudio
   int statusSink, statusVolume, statusMute;
@@ -85,9 +84,12 @@ void renderAudioModule(Module* module, Surface* surface)
   } else {
     text = "Unknown";
   }
-  TextSurface* textSurface = renderText(surface, FONT_SIZE, FONT_NAME, text);
-  setDrawColor4(surface, 0, 0, 0, 1);
-  drawText(surface, textSurface, DRAW_WIDTH / 2, DRAW_HEIGHT / 2 - 10, 1);
+  TextSurface* textSurface = renderText(cairoContext,
+                                        FONT_SIZE,
+                                        FONT_NAME,
+                                        text);
+  setDrawColor4(cairoContext, 0, 0, 0, 1);
+  drawText(cairoContext, textSurface, DRAW_WIDTH / 2, DRAW_HEIGHT / 2 - 10, 1);
   freeTextSurface(textSurface);
 
   // Draw the volume indicator
@@ -95,10 +97,10 @@ void renderAudioModule(Module* module, Surface* surface)
   int x = DRAW_WIDTH / 2 - BAR_LENGTH / 2;
   int y = DRAW_HEIGHT / 3 * 2 + 10;
   if (sink.muted) {
-    setDrawColor4(surface, 0.8f, 0.2f, 0.2f, 1.0f);
+    setDrawColor4(cairoContext, 0.8f, 0.2f, 0.2f, 1.0f);
   } else {
-    setDrawColor4(surface, 0.1f, 0.1f, 0.1f, 1.0f);
+    setDrawColor4(cairoContext, 0.1f, 0.1f, 0.1f, 1.0f);
   }
-  drawRect4(surface, x, y, BAR_LENGTH, BAR_THICKNESS / 2);
-  drawRect4(surface, x, y, curLength, BAR_THICKNESS);
+  drawRect4(cairoContext, x, y, BAR_LENGTH, BAR_THICKNESS / 2);
+  drawRect4(cairoContext, x, y, curLength, BAR_THICKNESS);
 }

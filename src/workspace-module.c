@@ -6,7 +6,6 @@
 #include "draw-utils.h"
 #include "json.h"
 #include "module.h"
-#include "surface.h"
 #include "workspace-module.h"
 
 #define DRAW_WIDTH 160
@@ -28,7 +27,7 @@ typedef struct Workspace {
 // least WORKSPACE_COUNT workspaces. Returns zero on success.
 static int getWorkspaceInfo(Workspace* workspaces);
 
-void renderWorkspaceModule(Module* module, Surface* surface);
+void renderWorkspaceModule(Module* module, cairo_t* cairoContext);
 
 void initWorkspaceModule(Module* module)
 {
@@ -38,7 +37,7 @@ void initWorkspaceModule(Module* module)
   setModuleDrawSize(module, (Dimensions){DRAW_WIDTH, DRAW_HEIGHT});
 }
 
-void renderWorkspaceModule(Module* module, Surface* surface)
+void renderWorkspaceModule(Module* module, cairo_t* cairoContext)
 {
   // Get the workspace info
   Workspace workspaces[WORKSPACE_COUNT];
@@ -73,7 +72,7 @@ void renderWorkspaceModule(Module* module, Surface* surface)
     // Render the workspace index text
     char workspaceIndexStr[2];
     snprintf(workspaceIndexStr, 2, "%i", (int)(i + 1) % 10);
-    TextSurface* ts = renderText(surface,
+    TextSurface* ts = renderText(cairoContext,
                                  FONT_SIZE,
                                  FONT_NAME,
                                  workspaceIndexStr);
@@ -96,16 +95,16 @@ void renderWorkspaceModule(Module* module, Surface* surface)
     }
 
     // Draw the workspace
-    setDrawColor(surface, workspaceColor);
-    drawRect4(surface, outerX, outerY, outerWidth, outerHeight);
+    setDrawColor(cairoContext, workspaceColor);
+    drawRect4(cairoContext, outerX, outerY, outerWidth, outerHeight);
     if (workspaces[i].focused) {
-      setDrawColor4(surface, 1, 1, 1, 1);
-      drawText(surface, ts, tsX, tsY, 1);
+      setDrawColor4(cairoContext, 1, 1, 1, 1);
+      drawText(cairoContext, ts, tsX, tsY, 1);
     } else {
-      setDrawColor4(surface, 1, 1, 1, 1);
-      drawRect4(surface, innerX, innerY, innerWidth, innerHeight);
-      setDrawColor(surface, workspaceColor);
-      drawText(surface, ts, tsX, tsY, 1);
+      setDrawColor4(cairoContext, 1, 1, 1, 1);
+      drawRect4(cairoContext, innerX, innerY, innerWidth, innerHeight);
+      setDrawColor(cairoContext, workspaceColor);
+      drawText(cairoContext, ts, tsX, tsY, 1);
     }
 
     // Free the workspace index text

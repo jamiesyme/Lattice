@@ -1,6 +1,7 @@
 #include <stdlib.h>
 
 #include "app-config.h"
+#include "geometry-utils.h"
 #include "interpolation-utils.h"
 #include "module.h"
 #include "module-director.h"
@@ -23,10 +24,19 @@ typedef struct ModuleDirector {
   Milliseconds lastUpdateTime;
 } ModuleDirector;
 
-static int isModuleOnScreen(DirectedModule* module);
 
-static int isModuleMoving(DirectedModule* module);
+static int isModuleOnScreen(DirectedModule* directedModule)
+{
+  return (directedModule->module->rect.x < 0 &&
+          directedModule->module->rect.y < 0);
+}
 
+static int isModuleMoving(DirectedModule* directedModule)
+{
+  return (!isInterpolatedValueAtGoal(&directedModule->interpolatedX) ||
+          !isInterpolatedValueAtGoal(&directedModule->interpolatedY) ||
+          !isInterpolatedValueAtGoal(&directedModule->interpolatedDepth));
+}
 
 ModuleDirector* newModuleDirector(AppConfig* config)
 {
@@ -276,15 +286,38 @@ int isModuleDirectorBusy(ModuleDirector* director)
   return 0;
 }
 
-int isModuleOnScreen(DirectedModule* directedModule)
+Rect getModuleDirectorOpenRect(ModuleDirector* director)
 {
-  return (directedModule->module->rect.x < 0 &&
-          directedModule->module->rect.y < 0);
-}
+  float xOffset = director->appConfig->windowOffset.x;
+  float yOffset = director->appConfig->windowOffset.y;
 
-int isModuleMoving(DirectedModule* directedModule)
-{
-  return (!isInterpolatedValueAtGoal(&directedModule->interpolatedX) ||
-          !isInterpolatedValueAtGoal(&directedModule->interpolatedY) ||
-          !isInterpolatedValueAtGoal(&directedModule->interpolatedDepth));
+  float maxX = 0.0f; // Doesn't change
+  float minX = maxX;
+  float maxY = -yOffset; // Doesn't change
+  float minY = maxY;
+
+  float goal;
+  float yPos = -yOffset;
+  for (size_t i = 0; i < director->moduleCount; ++i) {
+    DirectedModule* directedModule = &director->modules[i];
+
+    // Handle the x axis
+    goal = -directedModule->module->rect.width - xOffset;
+    if (goal < minX) {
+      minX = goal;
+    }
+
+    // Handle the y axis
+    yPos -= directedModule->module->rect.height;
+    goal = yPos;
+    if (goal < minY) {
+      minY = goal;
+    }
+
+    // Put the margin between the modules
+    yPos -= director->appConfig->moduleMarginSize;
+  }
+
+  Rect rect = {minX, minY, maxX - minX, maxY - minY};
+  return rect;
 }
