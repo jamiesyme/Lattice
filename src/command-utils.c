@@ -80,7 +80,7 @@ int runCommandAlloc(const char* command, char** output)
     if (currentSize >= maxOutputSize) {
       *output = realloc(*output, sizeof(char) * currentSize + 1);
     }
-    output[currentSize] = '\0';
+    (*output)[currentSize] = '\0';
   }
 
   // Get the process exit status
