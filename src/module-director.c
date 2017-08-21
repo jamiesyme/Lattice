@@ -15,6 +15,7 @@ typedef struct DirectedModule {
   InterpolatedValue interpolatedDepth;
   Milliseconds waitTimeLeft;
   Milliseconds alertTimeLeft;
+  int open;
 } DirectedModule;
 
 typedef struct ModuleDirector {
@@ -84,13 +85,16 @@ void updateModuleDirector(ModuleDirector* director)
         timeLeft -= directedModule->alertTimeLeft;
         directedModule->alertTimeLeft = 0;
 
-        // If the alert time was just used up, we have to close the module
-        float xGoal = 0.0f;
-        initInterpolatedValue(&directedModule->interpolatedX,
-                              directedModule->interpolatedX.current,
-                              xGoal,
-                              director->appConfig->moduleCloseMoveDuration,
-                              director->appConfig->moduleCloseMoveMethod);
+        // If the alert time was just used up, and the module is not marked as
+        // open, we have to close the module
+        if (!directedModule->open) {
+          float xGoal = 0.0f;
+          initInterpolatedValue(&directedModule->interpolatedX,
+                                directedModule->interpolatedX.current,
+                                xGoal,
+                                director->appConfig->moduleCloseMoveDuration,
+                                director->appConfig->moduleCloseMoveMethod);
+        }
       }
     }
 
@@ -133,6 +137,7 @@ void addModuleToDirector(ModuleDirector* director, Module* module)
   directedModule->module = module;
   directedModule->waitTimeLeft = 0;
   directedModule->alertTimeLeft = 0;
+  directedModule->open = 0;
   initInterpolatedValue(&directedModule->interpolatedX,
                         module->rect.x,
                         module->rect.x,
@@ -211,6 +216,9 @@ void openModulesWithDirector(ModuleDirector* director)
     directedModule->waitTimeLeft = waitTime;
     waitTime += director->appConfig->moduleOpenDelay;
 
+    // Mark the module as opened
+    directedModule->open = 1;
+
     // Put the margin between the modules
     yPos -= director->appConfig->moduleMarginSize;
   }
@@ -239,6 +247,9 @@ void closeModulesWithDirector(ModuleDirector* director)
     // Add wait time for the later modules
     directedModule->waitTimeLeft = waitTime;
     waitTime += director->appConfig->moduleCloseDelay;
+
+    // Mark the module as closed
+    directedModule->open = 0;
   }
 }
 
@@ -251,6 +262,11 @@ void alertModuleWithDirector(ModuleDirector* director, Module* module)
 
     if (directedModule->module != module) {
       continue;
+    }
+
+    // If the module is open, then an alert shouldn't do anything
+    if (directedModule->open) {
+      break;
     }
 
     // Set the x goal
