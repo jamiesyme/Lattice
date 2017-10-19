@@ -78,7 +78,7 @@ void updateModuleDirector(ModuleDirector* director)
 
     // Use up alert time
     if (directedModule->alertTimeLeft > 0 && !isModuleMoving(directedModule)) {
-      if (timeLeft <= directedModule->alertTimeLeft) {
+      if (timeLeft < directedModule->alertTimeLeft) {
         directedModule->alertTimeLeft -= timeLeft;
         continue;
       } else {
