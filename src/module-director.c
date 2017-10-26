@@ -130,9 +130,12 @@ void updateModuleDirectorAfterSleep(ModuleDirector* director)
 
 void addModuleToDirector(ModuleDirector* director, Module* module)
 {
+  // Allocate the module
   director->moduleCount++;
   director->modules = realloc(director->modules,
                               sizeof(DirectedModule) * director->moduleCount);
+
+  // Initialize the module
   DirectedModule* directedModule = &director->modules[director->moduleCount - 1];
   directedModule->module = module;
   directedModule->waitTimeLeft = 0;
@@ -153,6 +156,29 @@ void addModuleToDirector(ModuleDirector* director, Module* module)
                         module->depth,
                         0,
                         IM_LINEAR);
+
+  // Update the module Y positions
+  float yOffset = director->appConfig->windowOffset.y;
+  float yPos = -yOffset;
+  for (size_t i = 0; i < director->moduleCount; ++i) {
+    DirectedModule* directedModule = &director->modules[i];
+
+    // Instead of setting the modules position directly, use the interpolated
+    // value with a duration of 0. This is the way the position may be changed
+    // later, so this is considered the most bug-resistent approach.
+    yPos -= directedModule->module->rect.height;
+    float goal = yPos;
+    Milliseconds duration = 0;
+    InterpolationMethod method = director->appConfig->moduleMoveMethod;
+    initInterpolatedValue(&directedModule->interpolatedY,
+                          directedModule->interpolatedY.current,
+                          goal,
+                          duration,
+                          method);
+
+    // Put the margin between the modules
+    yPos -= director->appConfig->moduleMarginSize;
+  }
 }
 
 void openModulesWithDirector(ModuleDirector* director)
