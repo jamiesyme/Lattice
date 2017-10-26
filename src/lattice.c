@@ -78,39 +78,39 @@ int main()
   // We'll keep running until a RMSG_STOP message is received
   while (!app.shouldQuit) {
 
-	  // Draw the hub
-	  if (shouldRenderHub(app.hub)) {
+    // Draw the hub
+    if (shouldRenderHub(app.hub)) {
 
-		  // Resize the window
-		  hubScreenRect = getHubScreenRect(app.hub);
-		  setLinuxWindowPosition(app.window,
+      // Resize the window
+      hubScreenRect = getHubScreenRect(app.hub);
+      setLinuxWindowPosition(app.window,
                              (int)floor(hubScreenRect.x),
                              (int)floor(hubScreenRect.y));
-		  setLinuxWindowSize(app.window,
+      setLinuxWindowSize(app.window,
                          MAX(1, (unsigned int)hubScreenRect.width),
                          MAX(1, (unsigned int)hubScreenRect.height));
 
-		  // Render to the window
-		  prepareLinuxWindowRender(app.window);
-		  renderHub(app.hub, getCairoContextFromLinuxWindow(app.window));
-		  finishLinuxWindowRender(app.window);
-	  }
+      // Render to the window
+      prepareLinuxWindowRender(app.window);
+      renderHub(app.hub, getCairoContextFromLinuxWindow(app.window));
+      finishLinuxWindowRender(app.window);
+    }
 
-	  // Check for radio messages
-	  if (shouldRenderHub(app.hub)) {
+    // Check for radio messages
+    if (shouldRenderHub(app.hub)) {
 
-		  // The hub needs to keep rendering, so check for messages in a
-		  // non-blocking way.
+      // The hub needs to keep rendering, so check for messages in a
+      // non-blocking way.
       if (pollForRadioMsg(app.radio, &msg)) {
         processMsg(&app, msg);
         freeRadioMsg(&msg);
       }
-	  } else {
+    } else {
 
-		  // The hub is finished rendering, so there is nothing to do until we get
-		  // another radio message.
-		  updateHubBeforeSleep(app.hub);
-		  hideLinuxWindow(app.window);
+      // The hub is finished rendering, so there is nothing to do until we get
+      // another radio message.
+      updateHubBeforeSleep(app.hub);
+      hideLinuxWindow(app.window);
 
       waitForRadioMsg(app.radio, &msg);
 
@@ -119,7 +119,7 @@ int main()
 
       processMsg(&app, msg);
       freeRadioMsg(&msg);
-	  }
+    }
 
     // This will limit our frame rate to a maximum of 60 fps
     limitFps(app.fpsLimiter);

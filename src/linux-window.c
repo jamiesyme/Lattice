@@ -183,9 +183,9 @@ void freeLinuxWindow(LinuxWindow* window)
 
 void prepareLinuxWindowRender(LinuxWindow* window)
 {
-	cairo_push_group(window->cairoContext);
+  cairo_push_group(window->cairoContext);
 
-	// Clear the screen
+  // Clear the screen
   cairo_save(window->cairoContext);
   cairo_set_source_rgba(window->cairoContext, 0.f, 0.f, 0.f, 0.f);
   cairo_set_operator(window->cairoContext, CAIRO_OPERATOR_SOURCE);
@@ -195,21 +195,21 @@ void prepareLinuxWindowRender(LinuxWindow* window)
 
 void finishLinuxWindowRender(LinuxWindow* window)
 {
-	XEvent e;
-	
-	cairo_pop_group_to_source(window->cairoContext);
+  XEvent e;
+
+  cairo_pop_group_to_source(window->cairoContext);
   cairo_save(window->cairoContext);
   cairo_set_operator(window->cairoContext, CAIRO_OPERATOR_SOURCE);
-	cairo_paint(window->cairoContext);
+  cairo_paint(window->cairoContext);
   cairo_restore(window->cairoContext);
-	cairo_surface_flush(window->cairoSurface);
+  cairo_surface_flush(window->cairoSurface);
 
-	// Throw away the x events, we don't need them.
-	// Not sure if this is necessary, but I don't what happens when the queue gets
-	// full.
-	while (XPending(window->xDisplay)) {
-		XNextEvent(window->xDisplay, &e);
-	}
+  // Throw away the x events, we don't need them.
+  // Not sure if this is necessary, but I don't what happens when the queue gets
+  // full.
+  while (XPending(window->xDisplay)) {
+    XNextEvent(window->xDisplay, &e);
+  }
 }
 
 void showLinuxWindow(LinuxWindow* window)

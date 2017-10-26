@@ -32,7 +32,7 @@ typedef struct Hub {
 
 static Module* addModuleToHub(Hub* hub)
 {
-	hub->moduleCount++;
+  hub->moduleCount++;
   hub->modules = realloc(hub->modules, sizeof(Module) * hub->moduleCount);
   initModule(&hub->modules[hub->moduleCount - 1], hub->appConfig);
   return &hub->modules[hub->moduleCount - 1];
@@ -64,7 +64,7 @@ Hub* newHub(AppConfig* appConfig)
     addModuleToRenderer(hub->moduleRenderer, &hub->modules[i]);
   }
 
-	return hub;
+  return hub;
 }
 
 void freeHub(Hub* hub)
@@ -118,14 +118,14 @@ Rect getHubScreenRect(Hub* hub)
 
 void renderHub(Hub* hub, cairo_t* cairoContext)
 {
-	Rect screenRect;
+  Rect screenRect;
 
   // Let the module renderer do it's thing
   if (isModuleRendererBusy(hub->moduleRenderer)) {
 
-	  // Since the window resizes and moves as modules move, we need to correct
-	  // that with a translation.
-	  screenRect = getHubScreenRect(hub);
+    // Since the window resizes and moves as modules move, we need to correct
+    // that with a translation.
+    screenRect = getHubScreenRect(hub);
     cairo_save(cairoContext);
     cairo_translate(cairoContext, -screenRect.x, -screenRect.y);
     renderModules(hub->moduleRenderer, cairoContext);
@@ -140,7 +140,7 @@ void renderHub(Hub* hub, cairo_t* cairoContext)
 void updateHubBeforeSleep(Hub* hub)
 {
   UNUSED(hub);
-	// TODO: Will we ever actually need a before hook?
+  // TODO: Will we ever actually need a before hook?
 }
 
 void updateHubAfterSleep(Hub* hub)

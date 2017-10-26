@@ -8,7 +8,7 @@
 typedef struct _cairo cairo_t;
 
 typedef struct LinuxWindow LinuxWindow;
-	
+
 
 // Creates a new window with the specified dimensions, and the following
 // attributes:
