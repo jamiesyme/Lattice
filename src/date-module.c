@@ -11,6 +11,7 @@
 #define PRIMARY_FONT_SIZE 32
 #define SECONDARY_FONT_NAME "monaco"
 #define SECONDARY_FONT_SIZE 16
+#define UNUSED(x) (void)(x)
 
 
 // Compatible with tm.tm_wday
@@ -40,6 +41,8 @@ void initDateModule(Module* module)
 
 void renderDateModule(Module* module, cairo_t* cairoContext)
 {
+  UNUSED(module);
+
   // Get the current time
   time_t t;
   struct tm* tm;
@@ -63,7 +66,7 @@ void renderDateModule(Module* module, cairo_t* cairoContext)
   for (Weekday d = SUNDAY; d <= SATURDAY; ++d) {
     int x = DRAW_WIDTH / 2 - DAYS_WIDTH / 2 + dayDiff * d + dayDiff / 2;
     int y = DRAW_HEIGHT / 4 * 3 + 5;
-    if (d == tm->tm_wday) {
+    if ((int)d == tm->tm_wday) {
       setDrawColor4(cairoContext, 0, 0, 0, 1);
       drawRect4(cairoContext, x - 7, y + 10, 14, 1);
     } else {

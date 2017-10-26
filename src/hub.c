@@ -15,6 +15,7 @@
 
 #define ABS(x) ((x) < 0 ? -(x) : (x))
 #define MIN(x, y) ((x) < (y) ? (x) : (y))
+#define UNUSED(x) (void)(x)
 
 
 typedef struct Hub {
@@ -118,7 +119,7 @@ Rect getHubScreenRect(Hub* hub)
 void renderHub(Hub* hub, cairo_t* cairoContext)
 {
 	Rect screenRect;
-	
+
   // Let the module renderer do it's thing
   if (isModuleRendererBusy(hub->moduleRenderer)) {
 
@@ -138,6 +139,7 @@ void renderHub(Hub* hub, cairo_t* cairoContext)
 
 void updateHubBeforeSleep(Hub* hub)
 {
+  UNUSED(hub);
 	// TODO: Will we ever actually need a before hook?
 }
 

@@ -16,9 +16,9 @@
 typedef struct App {
   AppConfig config;
 
-	// Manages the Xlib connection and cairo context
-	LinuxWindow* window;
-	
+  // Manages the Xlib connection and cairo context
+  LinuxWindow* window;
+
   // Used to cap the frame rate at 60 fps
   FpsLimiter* fpsLimiter;
 

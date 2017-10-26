@@ -8,6 +8,7 @@
 #define DRAW_HEIGHT 40
 #define FONT_NAME "monaco"
 #define FONT_SIZE 32
+#define UNUSED(x) (void)(x)
 
 
 void renderTimeModule(Module* module, cairo_t* cairoContext);
@@ -22,6 +23,8 @@ void initTimeModule(Module* module)
 
 void renderTimeModule(Module* module, cairo_t* cairoContext)
 {
+  UNUSED(module);
+
   // Get the current time
   time_t t;
   struct tm* tm;

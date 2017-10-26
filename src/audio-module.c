@@ -14,6 +14,7 @@
 #define DRAW_HEIGHT 50.0f
 #define FONT_NAME "monaco"
 #define FONT_SIZE 32
+#define UNUSED(x) (void)(x)
 
 
 typedef enum SinkType {
@@ -52,6 +53,8 @@ void initAudioModule(Module* module)
 
 void renderAudioModule(Module* module, cairo_t* cairoContext)
 {
+  UNUSED(module);
+
   // Get the current sink settings from maudio
   int statusSink, statusVolume, statusMute;
   char bufSink[BUF_SIZE], bufVolume[BUF_SIZE], bufMute[BUF_SIZE];

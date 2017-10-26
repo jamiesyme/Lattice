@@ -13,6 +13,7 @@
 #define FONT_NAME "monaco"
 #define FONT_SIZE 16
 #define WORKSPACE_COUNT 10
+#define UNUSED(x) (void)(x)
 
 
 typedef struct Workspace {
@@ -39,6 +40,8 @@ void initWorkspaceModule(Module* module)
 
 void renderWorkspaceModule(Module* module, cairo_t* cairoContext)
 {
+  UNUSED(module);
+
   // Get the workspace info
   Workspace workspaces[WORKSPACE_COUNT];
   if (getWorkspaceInfo(workspaces) != 0) {
@@ -47,12 +50,12 @@ void renderWorkspaceModule(Module* module, cairo_t* cairoContext)
   }
 
   // Draw the workspaces, split between two rows
-  int outerWidth = 24;
-  int outerHeight = 24;
-  int borderSize = 3;
-  int innerWidth = outerWidth - borderSize * 2;
-  int innerHeight = outerHeight - borderSize * 2;
-  int columnCount = WORKSPACE_COUNT / 2;
+  unsigned int outerWidth = 24;
+  unsigned int outerHeight = 24;
+  unsigned int borderSize = 3;
+  unsigned int innerWidth = outerWidth - borderSize * 2;
+  unsigned int innerHeight = outerHeight - borderSize * 2;
+  unsigned int columnCount = WORKSPACE_COUNT / 2;
   for (size_t i = 0; i < WORKSPACE_COUNT; ++i) {
 
     // Compute the workspace position
